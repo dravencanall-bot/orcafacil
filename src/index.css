@@ -137,3 +137,35 @@ h1 { font-size: 1.4rem; margin: 8px 0 16px; }
 .botao:active { transform: scale(.98); }
 .topo { position: sticky; top: 0; z-index: 5; background: var(--fundo); }
 @media (max-width: 420px) { .cabecalho-itens { grid-template-columns: 1fr 48px 84px 28px; gap: 4px; } }
+
+/* Conta e plano */
+.menu { display: flex; gap: 14px; align-items: center; }
+.selo-pro { background: #fbbf24; color: #422006; font-weight: 800; font-size: .8rem; padding: 4px 10px; border-radius: 99px; text-decoration: none; letter-spacing: .05em; }
+.botao-link-simples { background: none; border: none; color: var(--verde); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 8px; }
+.trocar-modo { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 12px; }
+.entrar { max-width: 440px; margin: 0 auto; }
+.entrar .botao.grande { margin-top: 4px; }
+.ja-tenho { margin-top: 16px; }
+.cartao { background: #fff; border: 1px solid var(--borda); border-radius: 12px; padding: 16px; }
+.aviso-plano { display: block; background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; text-decoration: none; font-size: .92rem; }
+.aviso-plano.alerta { background: #fef3c7; border-color: #fcd34d; color: #78350f; }
+.aviso-limite { margin: 12px 0; display: grid; gap: 8px; border-color: #fcd34d; background: #fffbeb; }
+.aviso-limite p { margin: 0; }
+.status-plano { display: grid; gap: 6px; margin-bottom: 16px; }
+.status-plano strong { font-size: 1.1rem; }
+.status-plano.vencendo { border-color: #fcd34d; background: #fffbeb; }
+.barra-uso { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+.barra-uso div { height: 100%; background: var(--verde); }
+.planos { display: grid; gap: 12px; }
+@media (min-width: 640px) { .planos { grid-template-columns: 1fr 1fr; } }
+.plano { display: grid; gap: 8px; align-content: start; position: relative; }
+.plano.destaque { border: 2px solid var(--verde); }
+.plano h2 { margin: 0; font-size: 1.15rem; }
+.plano .selo { justify-self: start; }
+.plano .preco { margin: 0; font-weight: 700; color: var(--verde-escuro); }
+.plano ul { list-style: none; padding: 0; margin: 4px 0 8px; line-height: 1.8; }
+.plano-sucesso { text-align: center; padding: 32px 0; }
+.emoji-grande { font-size: 3.5rem; }
+.aguardando { display: flex; align-items: center; gap: 8px; color: var(--suave); }
+.bolinha { width: 10px; height: 10px; border-radius: 50%; background: var(--zap); animation: pulsar 1.2s infinite; }
+@keyframes pulsar { 50% { opacity: .2; } }

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { listarDocs, lerPerfil, salvarDoc } from '../lib/dados.js'
 import { dinheiro, dataBR, totais } from '../lib/formato.js'
 import BotaoInstalar from '../components/BotaoInstalar.jsx'
+import BoasVindas from './BoasVindas.jsx'
+import AvisoPlano from '../components/AvisoPlano.jsx'
 
 export const STATUS = {
   rascunho: 'Rascunho', enviado: 'Enviado', aprovado: 'Aprovado', pago: 'Pago', recusado: 'Recusado',
@@ -12,31 +14,10 @@ export default function Inicio() {
   const [docs, setDocs] = useState(listarDocs())
   const [filtro, setFiltro] = useState('todos')
 
-  if (!perfil.nome) {
-    return (
-      <section className="boas-vindas">
-        <span className="selo">Grátis · Sem anúncios</span>
-        <h1>Orçamento profissional<br />em 1 minuto</h1>
-        <p className="lead">Monte o orçamento no celular, mande pelo WhatsApp e receba por Pix. Para eletricista, pintor, encanador, diarista e todo autônomo.</p>
-        <a className="botao principal grande" href="#/perfil/x/novo">Fazer meu primeiro orçamento</a>
-        <ol className="passos">
-          <li><strong>Preencha seus dados</strong><span>Nome, WhatsApp, logo e chave Pix. Só uma vez.</span></li>
-          <li><strong>Monte o orçamento</strong><span>Serviços, valores e desconto. O total sai sozinho.</span></li>
-          <li><strong>Mande pelo WhatsApp</strong><span>O cliente abre o link, aprova e paga pelo QR Code Pix.</span></li>
-        </ol>
-        <ul className="vantagens">
-          <li>✓ Cara de empresa: sua logo e sua cor no orçamento</li>
-          <li>✓ Pix com o valor já preenchido, direto na sua conta</li>
-          <li>✓ Recibo com valor por extenso e PDF</li>
-          <li>✓ Controle do que foi aprovado e pago no mês</li>
-        </ul>
-        <BotaoInstalar />
-      </section>
-    )
-  }
+  if (!perfil.nome) return <BoasVindas logado />
 
-  const mudarStatus = (d, status) => {
-    salvarDoc({ ...d, status })
+  const mudarStatus = async (d, status) => {
+    try { await salvarDoc({ ...d, status }) } catch (e) { alert(e.message) }
     setDocs(listarDocs())
   }
 
@@ -47,6 +28,7 @@ export default function Inicio() {
 
   return (
     <section>
+      <AvisoPlano />
       <div className="acoes-topo">
         <a className="botao principal grande" href="#/novo">+ Novo orçamento</a>
         <a className="botao" href="#/novo/recibo">+ Recibo</a>

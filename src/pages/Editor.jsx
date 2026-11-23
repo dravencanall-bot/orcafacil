@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { pegarDoc, salvarDoc, novoId, proximoNumero, servicosUsados, ultimoValor } from '../lib/dados.js'
+import { ErroLimite, pegarDoc, salvarDoc, novoId, proximoNumero, servicosUsados, ultimoValor } from '../lib/dados.js'
 import { dinheiro, hojeISO, totais, lerNumero } from '../lib/formato.js'
 import { ir } from '../lib/navegar.js'
+import { atualizarConta } from '../lib/conta.js'
 
 const itemVazio = () => ({ desc: '', qtd: '1', valor: '' })
 
@@ -29,6 +30,8 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
     return docNovo(tipo)
   })
   const [erro, setErro] = useState('')
+  const [limite, setLimite] = useState(false)
+  const [salvando, setSalvando] = useState(false)
   const recibo = doc.tipo === 'recibo'
 
   const set = (campo, valor) => setDoc((d) => ({ ...d, [campo]: valor }))
@@ -48,12 +51,21 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
 
   const { total } = totais(doc)
 
-  const salvar = (e) => {
+  const salvar = async (e) => {
     e.preventDefault()
+    setErro('')
     if (!doc.cliente.nome.trim()) return setErro('Coloque o nome do cliente.')
     if (!doc.itens.some((i) => i.desc.trim() && lerNumero(i.valor) > 0)) return setErro('Adicione pelo menos um serviço com valor.')
-    salvarDoc(doc)
-    ir(`/ver/${doc.id}`)
+    setSalvando(true)
+    try {
+      await salvarDoc(doc)
+      atualizarConta()
+      ir(`/ver/${doc.id}`)
+    } catch (err) {
+      if (err instanceof ErroLimite) { setLimite(true); setTimeout(() => document.querySelector('.aviso-limite')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }
+      else setErro(err.message)
+      setSalvando(false)
+    }
   }
 
   return (
@@ -95,9 +107,16 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
       </fieldset>
 
       {erro && <p className="erro">{erro}</p>}
+      {limite && (
+        <div className="cartao aviso-limite">
+          <strong>Você usou os orçamentos grátis deste mês.</strong>
+          <p>Com o Pro você faz orçamentos ilimitados, por R$ 14,90 por mês. Recibos continuam liberados.</p>
+          <a className="botao principal grande" href="#/plano">Ver o plano Pro</a>
+        </div>
+      )}
       <div className="barra-fixa">
         <button type="button" className="botao" onClick={() => history.back()}>Cancelar</button>
-        <button className="botao principal">Salvar e ver</button>
+        <button className="botao principal" disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar e ver'}</button>
       </div>
     </form>
   )

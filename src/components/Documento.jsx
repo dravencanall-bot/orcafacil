@@ -1,7 +1,7 @@
 import { dinheiro, dataBR, somarDias, totais, lerNumero, porExtenso, formatarTelefone } from '../lib/formato.js'
 
 // O "papel" do orçamento/recibo: é o que o cliente vê e o que vira PDF.
-export default function Documento({ doc, perfil }) {
+export default function Documento({ doc, perfil, marca = true }) {
   const { subtotal, desconto, total } = totais(doc)
   const recibo = doc.tipo === 'recibo'
   const cor = perfil.cor || '#0f766e'
@@ -82,7 +82,7 @@ export default function Documento({ doc, perfil }) {
         </div>
       )}
 
-      <footer className="papel-rodape">Feito com OrçaFechou</footer>
+      {marca && <footer className="papel-rodape">Feito com OrçaFechou</footer>}
     </article>
   )
 }

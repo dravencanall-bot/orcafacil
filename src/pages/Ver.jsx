@@ -5,11 +5,13 @@ import { pegarDoc, lerPerfil, salvarDoc, apagarDoc, linkPublico } from '../lib/d
 import { dinheiro, totais, linkWhatsApp } from '../lib/formato.js'
 import { ir } from '../lib/navegar.js'
 import { tipoFinal } from '../lib/pix.js'
+import { useConta } from '../lib/conta.js'
 
 export default function Ver({ id }) {
   const [doc, setDoc] = useState(() => pegarDoc(id))
   const [aviso, setAviso] = useState('')
   const perfil = lerPerfil()
+  const { conta } = useConta()
 
   if (!doc) return <p className="vazio">Documento não encontrado. <a href="#/">Voltar</a></p>
 
@@ -25,8 +27,8 @@ export default function Ver({ id }) {
 
   const atualizar = (mudanca) => {
     const novo = { ...doc, ...mudanca }
-    salvarDoc(novo)
     setDoc(novo)
+    salvarDoc(novo).catch((e) => setAviso(e.message))
   }
 
   const enviar = () => {
@@ -40,7 +42,8 @@ export default function Ver({ id }) {
   }
 
   const apagar = () => {
-    if (confirm(`Apagar este ${nomeTipo}? Não dá para desfazer.`)) { apagarDoc(doc.id); ir('/') }
+    if (!confirm(`Apagar este ${nomeTipo}? Não dá para desfazer.`)) return
+    apagarDoc(doc.id).then(() => ir('/')).catch((e) => setAviso(e.message))
   }
 
   return (
@@ -65,7 +68,7 @@ export default function Ver({ id }) {
         {!perfil.pixChave && !recibo && <p className="dica">Dica: cadastre sua chave Pix em <a href="#/perfil">Meus dados</a> para o cliente pagar pelo link com QR Code.</p>}
       </div>
 
-      <Documento doc={doc} perfil={perfil} />
+      <Documento doc={doc} perfil={perfil} marca={!conta?.pro} />
       {!recibo && <PixBox perfil={perfil} valor={total} identificador={`ORC${doc.numero}`} />}
 
       <button className="botao-perigo nao-imprimir" onClick={apagar}>Apagar {nomeTipo}</button>

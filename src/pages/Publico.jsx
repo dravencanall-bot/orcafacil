@@ -1,11 +1,14 @@
 import Documento from '../components/Documento.jsx'
 import PixBox from '../components/PixBox.jsx'
-import { decodificar } from '../lib/dados.js'
+import { useEffect, useState } from 'react'
+import { decodificar, buscarPublico } from '../lib/dados.js'
 import { dinheiro, totais, linkWhatsApp } from '../lib/formato.js'
 
 // Página que o CLIENTE abre pelo link do WhatsApp.
-export default function Publico({ codigo }) {
-  const dados = decodificar(codigo || '')
+export default function Publico({ codigo, id }) {
+  const [dados, setDados] = useState(() => (id ? undefined : decodificar(codigo || '')))
+  useEffect(() => { if (id) buscarPublico(id).then(setDados) }, [id])
+  if (dados === undefined) return <div className="app"><main><p className="vazio">Abrindo o orçamento...</p></main></div>
   if (!dados) {
     return (
       <div className="app"><main>
@@ -13,7 +16,7 @@ export default function Publico({ codigo }) {
       </main></div>
     )
   }
-  const { doc, perfil } = dados
+  const { doc, perfil, pro } = dados
   const recibo = doc.tipo === 'recibo'
   const { total } = totais(doc)
   const num = String(doc.numero).padStart(4, '0')
@@ -24,7 +27,7 @@ export default function Publico({ codigo }) {
   return (
     <div className="app publico">
       <main>
-        <Documento doc={doc} perfil={perfil} />
+        <Documento doc={doc} perfil={perfil} marca={!pro} />
         {!recibo && perfil.telefone && (
           <div className="acoes nao-imprimir">
             <a className="botao whatsapp grande" href={aprovar} target="_blank" rel="noreferrer">Aprovar orçamento</a>

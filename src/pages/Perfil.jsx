@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { lerPerfil, salvarPerfil, exportarBackup, importarBackup, listarDocs } from '../lib/dados.js'
 import { ir } from '../lib/navegar.js'
+import { nuvemAtiva } from '../lib/supabase.js'
+import { useConta, sair } from '../lib/conta.js'
 import { detectarTipo } from '../lib/pix.js'
 
 const NOMES_TIPO = { cpf: 'CPF/CNPJ', celular: 'Celular', email: 'E-mail', aleatoria: 'Chave aleatória' }
@@ -34,14 +36,23 @@ export default function Perfil({ voltar }) {
   const set = (campo, valor) => setP((x) => ({ ...x, [campo]: valor }))
   const tipoChave = detectarTipo(p.pixChave)
 
-  const salvar = (e) => {
+  const { user } = useConta()
+  const [salvando, setSalvando] = useState(false)
+  const salvar = async (e) => {
     e.preventDefault()
+    setErro('')
     if (!p.nome.trim()) return setErro('Coloque seu nome ou o nome do seu negócio.')
     if (!p.telefone.trim()) return setErro('Coloque seu WhatsApp: é por ele que o cliente aprova o orçamento.')
     if (p.pixChave.trim() && tipoChave === null) return setErro('A chave Pix não parece válida. Confira ou deixe em branco.')
     if (tipoChave === 'ambiguo' && !p.pixEscolha) return setErro('Diga se a chave Pix é seu CPF ou seu celular.')
-    salvarPerfil(p)
-    ir(voltar === 'novo' ? '/novo' : '/')
+    setSalvando(true)
+    try {
+      await salvarPerfil(p)
+      ir(voltar === 'novo' ? '/novo' : '/')
+    } catch (err) {
+      setErro(err.message)
+      setSalvando(false)
+    }
   }
 
   return (
@@ -88,7 +99,7 @@ export default function Perfil({ voltar }) {
 
       <fieldset>
         <legend>Cópia de segurança</legend>
-        <p className="dica">Seus orçamentos ficam guardados neste aparelho. Baixe uma cópia de vez em quando (ou antes de trocar de celular) e guarde no Google Drive ou mande pra você no WhatsApp.</p>
+        <p className="dica">{nuvemAtiva ? 'Seus orçamentos já ficam salvos na sua conta. Se quiser, baixe também uma cópia em arquivo.' : 'Seus orçamentos ficam guardados neste aparelho. Baixe uma cópia de vez em quando (ou antes de trocar de celular) e guarde no Google Drive ou mande pra você no WhatsApp.'}</p>
         <div className="acoes-linha">
           <button type="button" className="botao" onClick={exportarBackup} disabled={!listarDocs().length}>Baixar cópia</button>
           <label className="botao arquivo">Restaurar cópia<input type="file" accept="application/json,.json" onChange={restaurar} /></label>
@@ -97,7 +108,17 @@ export default function Perfil({ voltar }) {
       </fieldset>
 
       {erro && <p className="erro">{erro}</p>}
-      <div className="barra-fixa"><button className="botao principal grande">Salvar</button></div>
+      {nuvemAtiva && user && (
+        <fieldset>
+          <legend>Sua conta</legend>
+          <p className="dica">Conectado como <strong>{user.email}</strong>. Seus orçamentos ficam salvos na conta.</p>
+          <div className="acoes-linha">
+            <a className="botao" href="#/plano">Meu plano</a>
+            <button type="button" className="botao" onClick={() => confirm('Sair da conta neste aparelho?') && sair()}>Sair</button>
+          </div>
+        </fieldset>
+      )}
+      <div className="barra-fixa"><button className="botao principal grande" disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</button></div>
     </form>
   )
 }
