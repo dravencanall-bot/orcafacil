@@ -1,0 +1,165 @@
+-- OrçaFechou: banco de dados.
+-- Cole TUDO isto no Supabase em "SQL Editor" > "New query" e clique em "Run".
+-- Pode rodar de novo sem problema: ele não apaga dados.
+
+-- Dados do profissional (nome, WhatsApp, Pix, logo...)
+create table if not exists public.perfis (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  dados jsonb not null default '{}'::jsonb,
+  atualizado_em timestamptz not null default now()
+);
+
+-- Orçamentos e recibos
+create table if not exists public.docs (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tipo text not null default 'orcamento' check (tipo in ('orcamento', 'recibo')),
+  dados jsonb not null,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now()
+);
+create index if not exists docs_user_idx on public.docs (user_id, criado_em desc);
+
+-- Plano Pro: só o servidor (webhook do pagamento) altera esta tabela.
+create table if not exists public.assinaturas (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  pro_ate timestamptz,
+  atualizado_em timestamptz not null default now()
+);
+
+-- Pagamentos recebidos (evita liberar o Pro duas vezes pelo mesmo Pix)
+create table if not exists public.pagamentos (
+  id text primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  plano text not null,
+  valor numeric(10, 2) not null,
+  status text not null,
+  criado_em timestamptz not null default now()
+);
+
+-- Segurança: cada pessoa só enxerga e mexe no que é dela.
+alter table public.perfis enable row level security;
+alter table public.docs enable row level security;
+alter table public.assinaturas enable row level security;
+alter table public.pagamentos enable row level security;
+
+drop policy if exists "perfil proprio" on public.perfis;
+create policy "perfil proprio" on public.perfis for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "docs proprios" on public.docs;
+create policy "docs proprios" on public.docs for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "ver minha assinatura" on public.assinaturas;
+create policy "ver minha assinatura" on public.assinaturas for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "ver meus pagamentos" on public.pagamentos;
+create policy "ver meus pagamentos" on public.pagamentos for select
+  using (auth.uid() = user_id);
+
+-- Limite do plano grátis: 5 orçamentos por mês (recibos não contam).
+create or replace function public.limite_gratis() returns integer
+  language sql immutable as $$ select 5 $$;
+
+create or replace function public.eh_pro(uid uuid) returns boolean
+  language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.assinaturas a where a.user_id = uid and a.pro_ate > now())
+$$;
+
+create or replace function public.orcamentos_no_mes(uid uuid) returns integer
+  language sql stable security definer set search_path = public as $$
+  select count(*)::int from public.docs d
+  where d.user_id = uid and d.tipo = 'orcamento'
+    and d.criado_em >= date_trunc('month', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo'
+$$;
+
+create or replace function public.checar_limite() returns trigger
+  language plpgsql security definer set search_path = public as $$
+begin
+  new.criado_em := now();
+  if new.tipo = 'orcamento' and not public.eh_pro(new.user_id)
+     and public.orcamentos_no_mes(new.user_id) >= public.limite_gratis() then
+    raise exception 'LIMITE_GRATIS' using hint = 'Assine o Pro para fazer orçamentos ilimitados.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists docs_limite on public.docs;
+create trigger docs_limite before insert on public.docs
+  for each row execute function public.checar_limite();
+
+-- Ao editar, não deixa mudar o dono, o tipo nem a data de criação.
+create or replace function public.proteger_doc() returns trigger
+  language plpgsql as $$
+begin
+  new.user_id := old.user_id;
+  new.tipo := old.tipo;
+  new.criado_em := old.criado_em;
+  new.atualizado_em := now();
+  return new;
+end $$;
+
+drop trigger if exists docs_proteger on public.docs;
+create trigger docs_proteger before update on public.docs
+  for each row execute function public.proteger_doc();
+
+-- Resumo da conta para o app: é Pro? até quando? quantos orçamentos usou no mês?
+create or replace function public.minha_conta() returns json
+  language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'pro', public.eh_pro(auth.uid()),
+    'pro_ate', (select pro_ate from public.assinaturas where user_id = auth.uid()),
+    'usados_mes', public.orcamentos_no_mes(auth.uid()),
+    'limite', public.limite_gratis()
+  )
+$$;
+
+-- Link curto: o cliente abre o orçamento sem login, só com o código do link.
+create or replace function public.doc_publico(doc_id text) returns json
+  language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'doc', d.dados,
+    'perfil', coalesce(p.dados, '{}'::jsonb),
+    'pro', public.eh_pro(d.user_id)
+  )
+  from public.docs d
+  left join public.perfis p on p.user_id = d.user_id
+  where d.id = doc_id
+$$;
+
+-- Usado pelo servidor quando um Pix é aprovado.
+create or replace function public.liberar_pro(p_pagamento text, p_user uuid, p_plano text, p_valor numeric, p_dias integer)
+  returns timestamptz
+  language plpgsql security definer set search_path = public as $$
+declare novo_fim timestamptz;
+begin
+  insert into public.pagamentos (id, user_id, plano, valor, status)
+    values (p_pagamento, p_user, p_plano, p_valor, 'approved')
+    on conflict (id) do nothing;
+  if not found then
+    select pro_ate into novo_fim from public.assinaturas where user_id = p_user;
+    return novo_fim; -- já processado antes
+  end if;
+  insert into public.assinaturas (user_id, pro_ate)
+    values (p_user, now() + make_interval(days => p_dias))
+    on conflict (user_id) do update
+      set pro_ate = greatest(coalesce(public.assinaturas.pro_ate, now()), now()) + make_interval(days => p_dias),
+          atualizado_em = now()
+    returning pro_ate into novo_fim;
+  return novo_fim;
+end $$;
+
+revoke all on function public.liberar_pro(text, uuid, text, numeric, integer) from public, anon, authenticated;
+revoke all on function public.eh_pro(uuid) from public, anon, authenticated;
+revoke all on function public.orcamentos_no_mes(uuid) from public, anon, authenticated;
+grant execute on function public.minha_conta() to authenticated;
+grant execute on function public.doc_publico(text) to anon, authenticated;
+
+-- O servidor (chave secreta) precisa poder liberar o Pro.
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.liberar_pro(text, uuid, text, numeric, integer) to service_role;
+  end if;
+end $$;
