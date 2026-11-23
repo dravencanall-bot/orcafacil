@@ -5,7 +5,7 @@ import { dinheiro } from '../lib/formato.js'
 
 export default function PixBox({ perfil, valor, identificador }) {
   const codigo = gerarPix({
-    chave: perfil.pixChave, tipo: perfil.pixTipo, nome: perfil.pixNome || perfil.nome,
+    chave: perfil.pixChave, tipo: perfil.pixEscolha, nome: perfil.pixNome || perfil.nome,
     cidade: perfil.cidade, valor, identificador,
   })
   const [qr, setQr] = useState('')

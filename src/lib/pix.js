@@ -22,15 +22,60 @@ function semAcento(s) {
   return String(s || '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/[^A-Za-z0-9 ]/g, '')
+    .replace(/[^A-Za-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
+}
+
+export function cpfValido(d) {
+  if (!/^\d{11}$/.test(d) || /^(\d)\1{10}$/.test(d)) return false
+  const dv = (n) => {
+    let soma = 0
+    for (let i = 0; i < n; i++) soma += Number(d[i]) * (n + 1 - i)
+    const r = (soma * 10) % 11
+    return r === 10 ? 0 : r
+  }
+  return dv(9) === Number(d[9]) && dv(10) === Number(d[10])
+}
+
+// Descobre o tipo da chave pelo que foi digitado.
+// Retorna 'cpf' (CPF/CNPJ), 'celular', 'email', 'aleatoria', 'ambiguo' (11 dígitos que podem ser CPF ou celular) ou null (inválida).
+export function detectarTipo(chave) {
+  const c = String(chave || '').trim()
+  if (!c) return null
+  if (c.includes('@')) return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c) ? 'email' : null
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c)) return 'aleatoria'
+  if (/[a-z]/i.test(c)) return null
+  const d = c.replace(/\D/g, '')
+  if (/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(c)) return cpfValido(d) ? 'cpf' : null
+  if (d.length === 14) return 'cpf' // CNPJ
+  if (c.startsWith('+') || /\(/.test(c)) return 'celular'
+  if ((d.length === 12 || d.length === 13) && d.startsWith('55')) return 'celular'
+  if (d.length === 12 && d.startsWith('0')) return 'celular' // 0 + DDD + número
+  if (d.length === 11) {
+    const cpf = cpfValido(d), cel = d[2] === '9'
+    if (cpf && cel) return 'ambiguo'
+    if (cpf) return 'cpf'
+    if (cel) return 'celular'
+    return null
+  }
+  if (d.length === 10) return 'celular'
+  return null
+}
+
+// Tipo final usado no Pix: o detectado, ou a escolha da pessoa quando for ambíguo.
+export function tipoFinal(chave, escolha) {
+  const t = detectarTipo(chave)
+  if (t === 'ambiguo') return escolha === 'cpf' ? 'cpf' : escolha === 'celular' ? 'celular' : null
+  return t
 }
 
 export function normalizarChave(chave, tipo) {
   const c = String(chave || '').trim()
   if (tipo === 'celular') {
-    const d = c.replace(/\D/g, '')
+    let d = c.replace(/\D/g, '')
     if (d.startsWith('55') && d.length >= 12) return '+' + d
+    if (d.startsWith('0')) d = d.slice(1)
     return '+55' + d
   }
   if (tipo === 'cpf') return c.replace(/\D/g, '')
@@ -39,8 +84,9 @@ export function normalizarChave(chave, tipo) {
 }
 
 export function gerarPix({ chave, tipo, nome, cidade, valor, identificador }) {
-  if (!chave) return null
-  const conta = campo('00', 'br.gov.bcb.pix') + campo('01', normalizarChave(chave, tipo))
+  const t = tipoFinal(chave, tipo)
+  if (!t) return null
+  const conta = campo('00', 'br.gov.bcb.pix') + campo('01', normalizarChave(chave, t))
   const txid = (semAcento(identificador).replace(/ /g, '') || '***').slice(0, 25)
   let payload =
     campo('00', '01') +

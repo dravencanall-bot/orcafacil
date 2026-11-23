@@ -23,7 +23,7 @@ const gravar = (k, v) => {
 
 export const perfilVazio = {
   nome: '', profissao: '', telefone: '', cidade: '', documento: '',
-  pixChave: '', pixTipo: 'celular', pixNome: '', cor: '#0f766e', logo: '',
+  pixChave: '', pixEscolha: '', pixNome: '', cor: '#0f766e', logo: '',
 }
 
 export const lerPerfil = () => ({ ...perfilVazio, ...ler(CHAVE_PERFIL, {}) })

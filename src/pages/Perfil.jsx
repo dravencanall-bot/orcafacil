@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { lerPerfil, salvarPerfil, exportarBackup, importarBackup, listarDocs } from '../lib/dados.js'
 import { ir } from '../lib/navegar.js'
+import { detectarTipo } from '../lib/pix.js'
+
+const NOMES_TIPO = { cpf: 'CPF/CNPJ', celular: 'Celular', email: 'E-mail', aleatoria: 'Chave aleatória' }
 
 function reduzirImagem(arquivo, tamanho = 240) {
   return new Promise((ok) => {
@@ -29,11 +32,14 @@ export default function Perfil({ voltar }) {
     catch { setMsgBackup('Esse arquivo não é um backup do OrçaFechou.') }
   }
   const set = (campo, valor) => setP((x) => ({ ...x, [campo]: valor }))
+  const tipoChave = detectarTipo(p.pixChave)
 
   const salvar = (e) => {
     e.preventDefault()
     if (!p.nome.trim()) return setErro('Coloque seu nome ou o nome do seu negócio.')
     if (!p.telefone.trim()) return setErro('Coloque seu WhatsApp: é por ele que o cliente aprova o orçamento.')
+    if (p.pixChave.trim() && tipoChave === null) return setErro('A chave Pix não parece válida. Confira ou deixe em branco.')
+    if (tipoChave === 'ambiguo' && !p.pixEscolha) return setErro('Diga se a chave Pix é seu CPF ou seu celular.')
     salvarPerfil(p)
     ir(voltar === 'novo' ? '/novo' : '/')
   }
@@ -63,15 +69,19 @@ export default function Perfil({ voltar }) {
 
       <fieldset>
         <legend>Pix (para o cliente te pagar pelo link)</legend>
-        <label>Tipo de chave
-          <select value={p.pixTipo} onChange={(e) => set('pixTipo', e.target.value)}>
-            <option value="celular">Celular</option>
-            <option value="cpf">CPF ou CNPJ</option>
-            <option value="email">E-mail</option>
-            <option value="aleatoria">Chave aleatória</option>
-          </select>
-        </label>
-        <label>Chave Pix<input value={p.pixChave} onChange={(e) => set('pixChave', e.target.value)} placeholder="Sua chave" /></label>
+        <label>Chave Pix<input value={p.pixChave} onChange={(e) => set('pixChave', e.target.value)} placeholder="CPF, celular, e-mail ou chave aleatória" /></label>
+        {p.pixChave && tipoChave === null && <p className="erro">Essa chave não parece válida. Confira se digitou o CPF, celular ou e-mail certinho.</p>}
+        {p.pixChave && tipoChave && tipoChave !== 'ambiguo' && <p className="aviso">✓ Chave do tipo {NOMES_TIPO[tipoChave]}</p>}
+        {tipoChave === 'ambiguo' && (
+          <div className="escolha-tipo">
+            <p className="dica">Esse número pode ser CPF ou celular. Qual é?</p>
+            <div className="acoes-linha">
+              {['cpf', 'celular'].map((t) => (
+                <button type="button" key={t} className={p.pixEscolha === t ? 'botao principal' : 'botao'} onClick={() => set('pixEscolha', t)}>{t === 'cpf' ? 'É meu CPF' : 'É meu celular'}</button>
+              ))}
+            </div>
+          </div>
+        )}
         <label>Nome do titular da conta<input value={p.pixNome} onChange={(e) => set('pixNome', e.target.value)} placeholder="Como aparece no banco" /></label>
         <p className="dica">O dinheiro cai direto na sua conta. O OrçaFechou não toca no seu dinheiro.</p>
       </fieldset>

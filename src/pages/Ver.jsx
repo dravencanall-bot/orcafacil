@@ -4,6 +4,7 @@ import PixBox from '../components/PixBox.jsx'
 import { pegarDoc, lerPerfil, salvarDoc, apagarDoc, linkPublico } from '../lib/dados.js'
 import { dinheiro, totais, linkWhatsApp } from '../lib/formato.js'
 import { ir } from '../lib/navegar.js'
+import { tipoFinal } from '../lib/pix.js'
 
 export default function Ver({ id }) {
   const [doc, setDoc] = useState(() => pegarDoc(id))
@@ -60,6 +61,7 @@ export default function Ver({ id }) {
           </div>
         )}
         {aviso && <p className="aviso">{aviso}</p>}
+        {perfil.pixChave && !recibo && !tipoFinal(perfil.pixChave, perfil.pixEscolha) && <p className="erro">Sua chave Pix precisa ser conferida. Abra <a href="#/perfil">Meus dados</a> e salve de novo.</p>}
         {!perfil.pixChave && !recibo && <p className="dica">Dica: cadastre sua chave Pix em <a href="#/perfil">Meus dados</a> para o cliente pagar pelo link com QR Code.</p>}
       </div>
 
