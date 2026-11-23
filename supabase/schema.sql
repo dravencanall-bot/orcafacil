@@ -265,3 +265,6 @@ revoke all on function public.admin_usuarios(text) from anon;
 revoke all on function public.admin_dar_pro(uuid, integer) from anon;
 revoke all on function public.admin_tirar_pro(uuid) from anon;
 revoke all on function public.admin_recusar_pedido(bigint) from anon;
+
+-- Avisa a API do Supabase que as tabelas mudaram.
+notify pgrst, 'reload schema';
