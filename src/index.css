@@ -1,0 +1,116 @@
+:root {
+  --verde: #0f766e; --verde-escuro: #115e59; --zap: #16a34a;
+  --fundo: #f1f5f9; --cartao: #fff; --texto: #0f172a; --suave: #64748b; --borda: #e2e8f0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--texto); background: var(--fundo); -webkit-text-size-adjust: 100%;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fundo); }
+a { color: var(--verde); }
+h1 { font-size: 1.4rem; margin: 8px 0 16px; }
+.app { max-width: 720px; margin: 0 auto; padding: 0 16px 96px; }
+.topo { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; }
+.marca { display: flex; gap: 8px; align-items: center; font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--texto); }
+.botao-link { font-weight: 600; text-decoration: none; }
+
+.botao { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--borda); background: #fff; color: var(--texto); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; min-height: 44px; }
+.botao.principal { background: var(--verde); border-color: var(--verde); color: #fff; }
+.botao.whatsapp { background: var(--zap); border-color: var(--zap); color: #fff; }
+.botao.grande { padding: 14px 18px; font-size: 1.05rem; width: 100%; }
+.botao-x { border: none; background: none; font-size: 1.6rem; color: var(--suave); cursor: pointer; width: 36px; }
+.botao-perigo { display: block; margin: 24px auto 0; background: none; border: none; color: #b91c1c; font: inherit; text-decoration: underline; cursor: pointer; }
+
+.boas-vindas { text-align: center; padding: 32px 0; }
+.boas-vindas h1 { font-size: 1.8rem; }
+.boas-vindas p { color: var(--suave); font-size: 1.1rem; }
+.vantagens { list-style: none; padding: 0; text-align: left; display: inline-block; margin-top: 24px; line-height: 2; }
+
+.acoes-topo { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 16px; }
+.acoes-topo .botao.grande { width: auto; }
+.resumo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.resumo div { background: #fff; border: 1px solid var(--borda); border-radius: 12px; padding: 12px; }
+.resumo span { display: block; color: var(--suave); font-size: .85rem; }
+.resumo strong { font-size: 1.2rem; }
+.filtros { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; }
+.filtros button { border: 1px solid var(--borda); background: #fff; border-radius: 99px; padding: 6px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+.filtros button.ativo { background: var(--texto); color: #fff; border-color: var(--texto); }
+.lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.item-lista { background: #fff; border: 1px solid var(--borda); border-radius: 12px; display: flex; align-items: center; gap: 8px; padding-right: 10px; }
+.item-principal { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px; text-decoration: none; color: inherit; min-width: 0; }
+.sub { color: var(--suave); font-size: .85rem; }
+.status { border-radius: 99px; border: none; padding: 6px 8px; font: inherit; font-size: .8rem; font-weight: 600; }
+.status-rascunho { background: #e2e8f0; } .status-enviado { background: #dbeafe; } .status-aprovado { background: #fef3c7; }
+.status-pago { background: #dcfce7; } .status-recusado { background: #fee2e2; }
+.vazio { text-align: center; color: var(--suave); padding: 32px 0; }
+
+.formulario fieldset { border: 1px solid var(--borda); background: #fff; border-radius: 12px; padding: 12px 14px 16px; margin: 0 0 14px; }
+.formulario legend { font-weight: 700; padding: 0 6px; }
+.formulario label { display: block; font-size: .9rem; color: var(--suave); margin-top: 10px; }
+.formulario input, .formulario select, .formulario textarea { display: block; width: 100%; margin-top: 4px; padding: 11px 12px; font: inherit; font-size: 16px;
+  border: 1px solid #cbd5e1; border-radius: 10px; color: var(--texto); background: #fff; }
+.formulario input:focus, .formulario textarea:focus, .formulario select:focus { outline: 2px solid var(--verde); border-color: transparent; }
+.linha-item { display: grid; grid-template-columns: 1fr 56px 96px 36px; gap: 6px; margin-bottom: 8px; align-items: center; }
+.linha-item input { margin-top: 0 !important; }
+.curto { max-width: 180px; }
+.duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.total-ao-vivo { margin-top: 14px; font-size: 1.15rem; text-align: right; }
+.erro { color: #b91c1c; font-weight: 600; }
+.dica { color: var(--suave); font-size: .9rem; }
+.aviso { color: var(--verde); font-weight: 600; word-break: break-all; }
+.barra-fixa { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--borda); padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  display: flex; gap: 8px; justify-content: center; }
+.barra-fixa .botao { flex: 1; max-width: 340px; }
+.logo-previa { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.logo-previa img { max-height: 60px; }
+.cores { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--suave); font-size: .9rem; flex-wrap: wrap; }
+.cor { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--borda); cursor: pointer; }
+.cor.ativa { box-shadow: 0 0 0 2px var(--texto); }
+
+.acoes { display: grid; gap: 8px; margin-bottom: 16px; }
+.acoes-linha { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+
+/* O "papel" do orçamento */
+.papel { --cor: var(--verde); background: #fff; border-radius: 12px; border: 1px solid var(--borda); padding: 20px; box-shadow: 0 2px 10px rgba(15,23,42,.06); }
+.papel-topo { display: flex; justify-content: space-between; gap: 12px; border-bottom: 3px solid var(--cor); padding-bottom: 14px; flex-wrap: wrap; }
+.papel-emissor { display: flex; gap: 12px; align-items: center; }
+.papel-logo { max-width: 64px; max-height: 64px; object-fit: contain; }
+.papel-nome { font-size: 1.15rem; color: var(--cor); }
+.papel-contato { color: var(--suave); font-size: .85rem; }
+.papel-tipo { text-align: right; font-size: .85rem; color: var(--suave); }
+.papel-titulo { font-weight: 800; letter-spacing: .08em; color: var(--cor); font-size: 1.05rem; }
+.papel-cliente { margin: 16px 0; }
+.papel-declaracao { margin: 18px 0; line-height: 1.6; }
+.rotulo { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); font-weight: 700; }
+.papel-itens { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .92rem; }
+.papel-itens th { text-align: left; font-size: .72rem; text-transform: uppercase; color: var(--suave); border-bottom: 1px solid var(--borda); padding: 6px 4px; }
+.papel-itens td { padding: 9px 4px; border-bottom: 1px solid var(--borda); vertical-align: top; }
+.num { text-align: right; white-space: nowrap; }
+.papel-totais { margin-left: auto; max-width: 260px; margin-top: 10px; }
+.papel-totais div { display: flex; justify-content: space-between; padding: 3px 0; }
+.papel-total { font-size: 1.25rem; font-weight: 800; color: var(--cor); border-top: 2px solid var(--cor); margin-top: 4px; padding-top: 6px !important; }
+.papel-condicoes { margin-top: 18px; display: grid; gap: 8px; font-size: .92rem; }
+.papel-condicoes p { margin: 0; white-space: pre-wrap; }
+.papel-assinatura { text-align: center; margin: 48px auto 0; max-width: 280px; }
+.linha-assinatura { border-top: 1px solid var(--texto); margin-bottom: 6px; }
+.papel-rodape { text-align: center; color: #cbd5e1; font-size: .72rem; margin-top: 20px; }
+
+.pix { background: #fff; border: 1px solid var(--borda); border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.pix h3 { margin: 0; }
+.publico main { padding-top: 16px; }
+.publico .acoes { margin-top: 16px; }
+.propaganda { display: block; text-align: center; margin-top: 24px; padding: 14px; border-radius: 12px; background: #ccfbf1; color: var(--verde-escuro); text-decoration: none; }
+
+@media (max-width: 420px) {
+  .papel { padding: 14px; }
+  .papel-itens { font-size: .82rem; }
+  .linha-item { grid-template-columns: 1fr 48px 84px 28px; gap: 4px; }
+  .papel-tipo { text-align: left; }
+}
+
+@media print {
+  body, .app { background: #fff; padding: 0; max-width: none; }
+  .nao-imprimir, .topo, .barra-fixa, .botao-perigo { display: none !important; }
+  .papel { border: none; box-shadow: none; padding: 0; }
+  @page { margin: 16mm; }
+}
