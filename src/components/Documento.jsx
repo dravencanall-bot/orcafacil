@@ -82,7 +82,7 @@ export default function Documento({ doc, perfil }) {
         </div>
       )}
 
-      <footer className="papel-rodape">Feito com OrçaFácil</footer>
+      <footer className="papel-rodape">Feito com OrçaFechou</footer>
     </article>
   )
 }

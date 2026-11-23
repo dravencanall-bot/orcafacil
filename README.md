@@ -1,4 +1,4 @@
-# OrçaFácil
+# OrçaFechou
 
 App de orçamento e recibo para profissionais autônomos (eletricista, pintor, diarista...).
 O profissional monta o orçamento, manda pelo WhatsApp, o cliente abre no celular, aprova e paga por Pix.

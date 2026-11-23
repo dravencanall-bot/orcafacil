@@ -26,7 +26,7 @@ export default function Perfil({ voltar }) {
     const f = e.target.files[0]
     if (!f) return
     try { const n = await importarBackup(f); setMsgBackup(`Pronto! ${n} documento(s) restaurados.`); setP(lerPerfil()) }
-    catch { setMsgBackup('Esse arquivo não é um backup do OrçaFácil.') }
+    catch { setMsgBackup('Esse arquivo não é um backup do OrçaFechou.') }
   }
   const set = (campo, valor) => setP((x) => ({ ...x, [campo]: valor }))
 
@@ -73,7 +73,7 @@ export default function Perfil({ voltar }) {
         </label>
         <label>Chave Pix<input value={p.pixChave} onChange={(e) => set('pixChave', e.target.value)} placeholder="Sua chave" /></label>
         <label>Nome do titular da conta<input value={p.pixNome} onChange={(e) => set('pixNome', e.target.value)} placeholder="Como aparece no banco" /></label>
-        <p className="dica">O dinheiro cai direto na sua conta. O OrçaFácil não toca no seu dinheiro.</p>
+        <p className="dica">O dinheiro cai direto na sua conta. O OrçaFechou não toca no seu dinheiro.</p>
       </fieldset>
 
       <fieldset>

@@ -91,18 +91,18 @@ export function ultimoValor(desc) {
 
 // Cópia de segurança: baixa um arquivo com tudo e permite restaurar depois.
 export function exportarBackup() {
-  const dados = { app: 'orcafacil', versao: 1, exportadoEm: new Date().toISOString(), perfil: lerPerfil(), docs: ler(CHAVE_DOCS, []) }
+  const dados = { app: 'orcafechou', versao: 1, exportadoEm: new Date().toISOString(), perfil: lerPerfil(), docs: ler(CHAVE_DOCS, []) }
   const blob = new Blob([JSON.stringify(dados)], { type: 'application/json' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
-  a.download = `orcafacil-backup-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = `orcafechou-backup-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
 export async function importarBackup(arquivo) {
   const dados = JSON.parse(await arquivo.text())
-  if (dados.app !== 'orcafacil' || !Array.isArray(dados.docs)) throw new Error('Arquivo inválido')
+  if (!['orcafechou', 'orcafacil'].includes(dados.app) || !Array.isArray(dados.docs)) throw new Error('Arquivo inválido')
   const atuais = ler(CHAVE_DOCS, [])
   const ids = new Set(atuais.map((d) => d.id))
   gravar(CHAVE_DOCS, [...atuais, ...dados.docs.filter((d) => !ids.has(d.id))])

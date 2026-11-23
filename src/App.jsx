@@ -39,7 +39,7 @@ export default function App() {
     <div className="app">
       <header className="topo nao-imprimir">
         <a href="#/" className="marca">
-          <img src="/icon.svg" alt="" width="28" height="28" /> OrçaFácil
+          <img src="/icon.svg" alt="" width="28" height="28" /> OrçaFechou
         </a>
         <a href="#/perfil" className="botao-link">Meus dados</a>
       </header>

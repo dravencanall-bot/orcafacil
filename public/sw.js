@@ -1,5 +1,5 @@
 // Service worker simples: deixa o app abrir mesmo sem internet.
-const CACHE = 'orcafacil-v2';
+const CACHE = 'orcafechou-v3';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/index.html', '/icon.svg', '/manifest.webmanifest'])));
   self.skipWaiting();
