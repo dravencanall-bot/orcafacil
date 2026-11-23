@@ -163,3 +163,105 @@ do $$ begin
     grant execute on function public.liberar_pro(text, uuid, text, numeric, integer) to service_role;
   end if;
 end $$;
+
+-- ===================================================================
+-- Pagamento MANUAL do Pro (enquanto não há Mercado Pago):
+-- o cliente paga no Pix do dono do app, avisa no app, e o dono libera no painel.
+-- ===================================================================
+
+create table if not exists public.admins (
+  user_id uuid primary key references auth.users (id) on delete cascade
+);
+alter table public.admins enable row level security; -- ninguém lê/escreve direto
+
+create or replace function public.eh_admin() returns boolean
+  language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.admins where user_id = auth.uid())
+$$;
+
+-- Configuração pública: chave Pix e WhatsApp para receber as assinaturas.
+create table if not exists public.config (
+  id integer primary key default 1 check (id = 1),
+  pix_chave text not null default '',
+  pix_escolha text not null default '',
+  pix_nome text not null default '',
+  pix_cidade text not null default '',
+  whatsapp text not null default ''
+);
+insert into public.config (id) values (1) on conflict do nothing;
+alter table public.config enable row level security;
+drop policy if exists "config publica" on public.config;
+create policy "config publica" on public.config for select using (true);
+drop policy if exists "admin edita config" on public.config;
+create policy "admin edita config" on public.config for update using (public.eh_admin()) with check (public.eh_admin());
+
+-- Pedidos de Pro ("já paguei"), que o dono aprova no painel.
+create table if not exists public.pedidos (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  plano text not null check (plano in ('mensal', 'anual')),
+  status text not null default 'pendente' check (status in ('pendente', 'aprovado', 'recusado')),
+  criado_em timestamptz not null default now()
+);
+create unique index if not exists pedidos_um_pendente on public.pedidos (user_id) where status = 'pendente';
+alter table public.pedidos enable row level security;
+drop policy if exists "ver meus pedidos" on public.pedidos;
+create policy "ver meus pedidos" on public.pedidos for select using (auth.uid() = user_id);
+drop policy if exists "criar meu pedido" on public.pedidos;
+create policy "criar meu pedido" on public.pedidos for insert
+  with check (auth.uid() = user_id and status = 'pendente');
+
+-- Painel do dono: lista de usuários.
+create or replace function public.admin_usuarios(busca text default '')
+  returns table (user_id uuid, email text, criado_em timestamptz, pro_ate timestamptz, usados_mes integer,
+                 pedido_id bigint, pedido_plano text, pedido_em timestamptz, nome text)
+  language plpgsql stable security definer set search_path = public, auth as $$
+begin
+  if not public.eh_admin() then raise exception 'SEM_PERMISSAO'; end if;
+  return query
+    select u.id, u.email::text, u.created_at, a.pro_ate, public.orcamentos_no_mes(u.id),
+           pe.id, pe.plano, pe.criado_em, (p.dados ->> 'nome')
+    from auth.users u
+    left join public.assinaturas a on a.user_id = u.id
+    left join public.perfis p on p.user_id = u.id
+    left join public.pedidos pe on pe.user_id = u.id and pe.status = 'pendente'
+    where coalesce(busca, '') = '' or u.email ilike '%' || busca || '%' or (p.dados ->> 'nome') ilike '%' || busca || '%'
+    order by pe.criado_em desc nulls last, u.created_at desc
+    limit 200;
+end $$;
+
+create or replace function public.admin_dar_pro(uid uuid, dias integer) returns timestamptz
+  language plpgsql security definer set search_path = public as $$
+declare fim timestamptz;
+begin
+  if not public.eh_admin() then raise exception 'SEM_PERMISSAO'; end if;
+  if dias not between 1 and 400 then raise exception 'DIAS_INVALIDOS'; end if;
+  fim := public.liberar_pro('manual-' || gen_random_uuid()::text, uid, case when dias >= 365 then 'anual' else 'mensal' end,
+                            case when dias >= 365 then 119 else 14.90 end, dias);
+  update public.pedidos set status = 'aprovado' where user_id = uid and status = 'pendente';
+  return fim;
+end $$;
+
+create or replace function public.admin_tirar_pro(uid uuid) returns void
+  language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_admin() then raise exception 'SEM_PERMISSAO'; end if;
+  update public.assinaturas set pro_ate = now(), atualizado_em = now() where user_id = uid;
+end $$;
+
+create or replace function public.admin_recusar_pedido(pid bigint) returns void
+  language plpgsql security definer set search_path = public as $$
+begin
+  if not public.eh_admin() then raise exception 'SEM_PERMISSAO'; end if;
+  update public.pedidos set status = 'recusado' where id = pid;
+end $$;
+
+grant execute on function public.eh_admin() to authenticated;
+grant execute on function public.admin_usuarios(text) to authenticated;
+grant execute on function public.admin_dar_pro(uuid, integer) to authenticated;
+grant execute on function public.admin_tirar_pro(uuid) to authenticated;
+grant execute on function public.admin_recusar_pedido(bigint) to authenticated;
+revoke all on function public.admin_usuarios(text) from anon;
+revoke all on function public.admin_dar_pro(uuid, integer) from anon;
+revoke all on function public.admin_tirar_pro(uuid) from anon;
+revoke all on function public.admin_recusar_pedido(bigint) from anon;

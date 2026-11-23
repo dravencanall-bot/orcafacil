@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase, nuvemAtiva } from './supabase.js'
 import { sincronizar, minhaConta, limparAparelho } from './dados.js'
 
-let estado = { carregando: nuvemAtiva, user: null, conta: null, erro: '' }
+let estado = { carregando: nuvemAtiva, user: null, conta: null, admin: false, erro: '' }
 const ouvintes = new Set()
 const mudar = (m) => { estado = { ...estado, ...m }; ouvintes.forEach((f) => f(estado)) }
 
@@ -14,8 +14,8 @@ export function useConta() {
 }
 
 export async function atualizarConta() {
-  const conta = await minhaConta()
-  mudar({ conta })
+  const [conta, admin] = await Promise.all([minhaConta(), supabase.rpc('eh_admin').then((r) => r.data === true, () => false)])
+  mudar({ conta, admin })
   return conta
 }
 
@@ -40,7 +40,7 @@ if (nuvemAtiva) {
   })
   supabase.auth.onAuthStateChange((evento, session) => {
     if (evento === 'PASSWORD_RECOVERY') setTimeout(() => { location.hash = '/nova-senha' }, 50)
-    if (evento === 'SIGNED_OUT') { sincronizadoPara = null; mudar({ user: null, conta: null, carregando: false }) }
+    if (evento === 'SIGNED_OUT') { sincronizadoPara = null; mudar({ user: null, conta: null, admin: false, carregando: false }) }
     else if (session?.user && (evento === 'SIGNED_IN' || evento === 'INITIAL_SESSION')) setTimeout(() => aoEntrar(session.user), 0)
   })
 }

@@ -8,6 +8,7 @@ import Entrar from './pages/Entrar.jsx'
 import NovaSenha from './pages/NovaSenha.jsx'
 import Plano from './pages/Plano.jsx'
 import BoasVindas from './pages/BoasVindas.jsx'
+import Admin from './pages/Admin.jsx'
 import { nuvemAtiva } from './lib/supabase.js'
 import { useConta } from './lib/conta.js'
 
@@ -29,7 +30,7 @@ function useRota() {
 
 export default function App() {
   const [pagina, a, b] = useRota()
-  const { user, conta, carregando, erro } = useConta()
+  const { user, conta, admin, carregando, erro } = useConta()
 
   if (pagina === 'v') return <Publico codigo={a} />
   if (pagina === 'o') return <Publico id={a} />
@@ -48,6 +49,7 @@ export default function App() {
   else if (pagina === 'ver') conteudo = <Ver id={a} />
   else if (pagina === 'perfil') conteudo = <Perfil voltar={b} />
   else if (pagina === 'plano' && nuvemAtiva) conteudo = <Plano />
+  else if (pagina === 'admin' && nuvemAtiva) conteudo = <Admin />
   else conteudo = <Inicio />
 
   return (
@@ -58,7 +60,8 @@ export default function App() {
         </a>
         {(!nuvemAtiva || user) && (
           <nav className="menu">
-            {nuvemAtiva && <a href="#/plano" className={conta?.pro ? 'selo-pro' : 'botao-link'}>{conta?.pro ? 'PRO' : 'Seja Pro'}</a>}
+            {nuvemAtiva && admin && <a href="#/admin" className="botao-link">Painel</a>}
+            {nuvemAtiva && !admin && <a href="#/plano" className={conta?.pro ? 'selo-pro' : 'botao-link'}>{conta?.pro ? 'PRO' : 'Seja Pro'}</a>}
             <a href="#/perfil" className="botao-link">Meus dados</a>
           </nav>
         )}

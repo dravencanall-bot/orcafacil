@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase, PLANOS } from '../lib/supabase.js'
 import { useConta, atualizarConta, diasRestantes } from '../lib/conta.js'
 import { dataBR } from '../lib/formato.js'
+import PagamentoManual from '../components/PagamentoManual.jsx'
+
+// '1' = cobrança automática pelo Mercado Pago (precisa do MP_ACCESS_TOKEN no servidor).
+// Qualquer outro valor = pagamento manual no Pix do dono do app, liberado no painel.
+const AUTOMATICO = import.meta.env.VITE_PAGAMENTO_AUTOMATICO === '1'
 
 async function chamar(caminho, opcoes = {}) {
   const { data } = await supabase.auth.getSession()
@@ -21,7 +26,13 @@ export default function Plano() {
   const [gerando, setGerando] = useState('')
   const [pago, setPago] = useState(false)
   const [copiado, setCopiado] = useState(false)
+  const [manual, setManual] = useState('')
+  const [pedidoPendente, setPedidoPendente] = useState(false)
   const timer = useRef()
+
+  useEffect(() => {
+    if (!AUTOMATICO) supabase.from('pedidos').select('id').eq('status', 'pendente').then(({ data }) => setPedidoPendente(!!data?.length))
+  }, [])
 
   useEffect(() => { atualizarConta() }, [])
 
@@ -41,6 +52,7 @@ export default function Plano() {
   }, [cobranca, pago])
 
   const assinar = async (plano) => {
+    if (!AUTOMATICO) return setManual(plano)
     setErro(''); setGerando(plano)
     try { setCobranca(await chamar('/api/checkout', { method: 'POST', body: JSON.stringify({ plano }) })) }
     catch (e) { setErro(e.message) }
@@ -53,6 +65,8 @@ export default function Plano() {
     }
     setCopiado(true); setTimeout(() => setCopiado(false), 2500)
   }
+
+  if (manual) return <PagamentoManual plano={manual} voltar={() => setManual('')} />
 
   if (pago) {
     return (
@@ -97,6 +111,7 @@ export default function Plano() {
         </div>
       )}
 
+      {pedidoPendente && !conta?.pro && <p className="aviso-plano">Recebemos seu aviso de pagamento. Seu Pro será liberado assim que for conferido.</p>}
       <div className="planos">
         {Object.entries(PLANOS).map(([id, p]) => (
           <div key={id} className={`cartao plano ${id === 'anual' ? 'destaque' : ''}`}>
@@ -115,7 +130,7 @@ export default function Plano() {
         ))}
       </div>
       {erro && <p className="erro">{erro}</p>}
-      <p className="dica">Pagamento único por Pix, sem débito automático e sem fidelidade. Perto de vencer, o app te avisa para renovar.</p>
+      <p className="dica">Pagamento único por Pix, sem débito automático e sem fidelidade. Perto de vencer, o app te avisa para renovar.{!AUTOMATICO && ' A liberação é conferida por uma pessoa e costuma levar poucas horas.'}</p>
     </section>
   )
 }

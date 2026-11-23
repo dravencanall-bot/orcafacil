@@ -169,3 +169,14 @@ h1 { font-size: 1.4rem; margin: 8px 0 16px; }
 .aguardando { display: flex; align-items: center; gap: 8px; color: var(--suave); }
 .bolinha { width: 10px; height: 10px; border-radius: 50%; background: var(--zap); animation: pulsar 1.2s infinite; }
 @keyframes pulsar { 50% { opacity: .2; } }
+
+/* Painel do dono */
+.admin h2 { font-size: 1.1rem; margin: 22px 0 8px; }
+.usuario { display: grid; gap: 10px; }
+.tag { display: inline-block; font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #e2e8f0; margin: 4px 6px 0 0; }
+.tag.pro { background: #fef3c7; color: #78350f; }
+.tag.pedido { background: #dcfce7; color: #14532d; }
+.busca { display: flex; gap: 8px; margin-bottom: 10px; }
+.busca input { flex: 1; min-width: 0; padding: 10px 12px; font: inherit; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 10px; }
+.admin .formulario { margin-top: 8px; }
+.pix .botao.grande { max-width: 360px; }

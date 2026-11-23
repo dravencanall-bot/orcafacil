@@ -36,7 +36,7 @@ export default function Perfil({ voltar }) {
   const set = (campo, valor) => setP((x) => ({ ...x, [campo]: valor }))
   const tipoChave = detectarTipo(p.pixChave)
 
-  const { user } = useConta()
+  const { user, admin } = useConta()
   const [salvando, setSalvando] = useState(false)
   const salvar = async (e) => {
     e.preventDefault()
@@ -114,6 +114,7 @@ export default function Perfil({ voltar }) {
           <p className="dica">Conectado como <strong>{user.email}</strong>. Seus orçamentos ficam salvos na conta.</p>
           <div className="acoes-linha">
             <a className="botao" href="#/plano">Meu plano</a>
+            {admin && <a className="botao principal" href="#/admin">Painel do dono</a>}
             <button type="button" className="botao" onClick={() => confirm('Sair da conta neste aparelho?') && sair()}>Sair</button>
           </div>
         </fieldset>
