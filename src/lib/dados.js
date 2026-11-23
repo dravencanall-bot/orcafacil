@@ -73,3 +73,39 @@ export function decodificar(txt) {
 export function linkPublico(doc, perfil) {
   return `${location.origin}/#/v/${codificar(doc, perfil)}`
 }
+
+// Descrições já usadas antes, para sugerir ao digitar (mais rápido).
+export function servicosUsados() {
+  const contagem = {}
+  for (const d of ler(CHAVE_DOCS, [])) for (const i of d.itens || []) {
+    const t = (i.desc || '').trim()
+    if (t) contagem[t] = (contagem[t] || 0) + 1
+  }
+  return Object.entries(contagem).sort((a, b) => b[1] - a[1]).map(([t]) => t).slice(0, 50)
+}
+
+export function ultimoValor(desc) {
+  for (const d of listarDocs()) for (const i of d.itens || []) if (i.desc === desc && i.valor) return i.valor
+  return ''
+}
+
+// Cópia de segurança: baixa um arquivo com tudo e permite restaurar depois.
+export function exportarBackup() {
+  const dados = { app: 'orcafacil', versao: 1, exportadoEm: new Date().toISOString(), perfil: lerPerfil(), docs: ler(CHAVE_DOCS, []) }
+  const blob = new Blob([JSON.stringify(dados)], { type: 'application/json' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `orcafacil-backup-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+}
+
+export async function importarBackup(arquivo) {
+  const dados = JSON.parse(await arquivo.text())
+  if (dados.app !== 'orcafacil' || !Array.isArray(dados.docs)) throw new Error('Arquivo inválido')
+  const atuais = ler(CHAVE_DOCS, [])
+  const ids = new Set(atuais.map((d) => d.id))
+  gravar(CHAVE_DOCS, [...atuais, ...dados.docs.filter((d) => !ids.has(d.id))])
+  if (!lerPerfil().nome && dados.perfil) salvarPerfil(dados.perfil)
+  return dados.docs.length
+}

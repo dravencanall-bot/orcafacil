@@ -50,6 +50,7 @@ export default function Ver({ id }) {
           <button className="botao" onClick={copiarLink}>Copiar link</button>
           <button className="botao" onClick={() => window.print()}>Baixar PDF</button>
           <a className="botao" href={`#/editar/${doc.id}`}>Editar</a>
+          <a className="botao" href={`#/copiar/${doc.id}`}>Duplicar</a>
         </div>
         {!recibo && (
           <div className="acoes-linha">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { lerPerfil, salvarPerfil } from '../lib/dados.js'
+import { lerPerfil, salvarPerfil, exportarBackup, importarBackup, listarDocs } from '../lib/dados.js'
 import { ir } from '../lib/navegar.js'
 
 function reduzirImagem(arquivo, tamanho = 240) {
@@ -21,6 +21,13 @@ const CORES = ['#0f766e', '#1d4ed8', '#b91c1c', '#c2410c', '#7c3aed', '#111827']
 export default function Perfil({ voltar }) {
   const [p, setP] = useState(lerPerfil())
   const [erro, setErro] = useState('')
+  const [msgBackup, setMsgBackup] = useState('')
+  const restaurar = async (e) => {
+    const f = e.target.files[0]
+    if (!f) return
+    try { const n = await importarBackup(f); setMsgBackup(`Pronto! ${n} documento(s) restaurados.`); setP(lerPerfil()) }
+    catch { setMsgBackup('Esse arquivo não é um backup do OrçaFácil.') }
+  }
   const set = (campo, valor) => setP((x) => ({ ...x, [campo]: valor }))
 
   const salvar = (e) => {
@@ -67,6 +74,16 @@ export default function Perfil({ voltar }) {
         <label>Chave Pix<input value={p.pixChave} onChange={(e) => set('pixChave', e.target.value)} placeholder="Sua chave" /></label>
         <label>Nome do titular da conta<input value={p.pixNome} onChange={(e) => set('pixNome', e.target.value)} placeholder="Como aparece no banco" /></label>
         <p className="dica">O dinheiro cai direto na sua conta. O OrçaFácil não toca no seu dinheiro.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cópia de segurança</legend>
+        <p className="dica">Seus orçamentos ficam guardados neste aparelho. Baixe uma cópia de vez em quando (ou antes de trocar de celular) e guarde no Google Drive ou mande pra você no WhatsApp.</p>
+        <div className="acoes-linha">
+          <button type="button" className="botao" onClick={exportarBackup} disabled={!listarDocs().length}>Baixar cópia</button>
+          <label className="botao arquivo">Restaurar cópia<input type="file" accept="application/json,.json" onChange={restaurar} /></label>
+        </div>
+        {msgBackup && <p className="aviso">{msgBackup}</p>}
       </fieldset>
 
       {erro && <p className="erro">{erro}</p>}

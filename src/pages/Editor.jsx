@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { pegarDoc, salvarDoc, novoId, proximoNumero } from '../lib/dados.js'
+import { pegarDoc, salvarDoc, novoId, proximoNumero, servicosUsados, ultimoValor } from '../lib/dados.js'
 import { dinheiro, hojeISO, totais, lerNumero } from '../lib/formato.js'
 import { ir } from '../lib/navegar.js'
 
@@ -14,9 +14,14 @@ function docNovo(tipo) {
   }
 }
 
-export default function Editor({ id, tipo = 'orcamento', deOrcamento }) {
+export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe }) {
+  const [sugestoes] = useState(servicosUsados)
   const [doc, setDoc] = useState(() => {
     if (id) return pegarDoc(id) || docNovo(tipo)
+    if (copiaDe) {
+      const o = pegarDoc(copiaDe)
+      if (o) return { ...docNovo(o.tipo), itens: o.itens, desconto: o.desconto, pagamento: o.pagamento, obs: o.obs, validadeDias: o.validadeDias }
+    }
     if (deOrcamento) {
       const o = pegarDoc(deOrcamento)
       if (o) return { ...docNovo('recibo'), cliente: o.cliente, itens: o.itens, desconto: o.desconto, origem: o.id }
@@ -28,7 +33,16 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento }) {
 
   const set = (campo, valor) => setDoc((d) => ({ ...d, [campo]: valor }))
   const setCliente = (campo, valor) => setDoc((d) => ({ ...d, cliente: { ...d.cliente, [campo]: valor } }))
-  const setItem = (k, campo, valor) => setDoc((d) => ({ ...d, itens: d.itens.map((i, j) => (j === k ? { ...i, [campo]: valor } : i)) }))
+  const setItem = (k, campo, valor) => setDoc((d) => ({
+    ...d,
+    itens: d.itens.map((i, j) => {
+      if (j !== k) return i
+      const novo = { ...i, [campo]: valor }
+      // Se escolheu um serviço já usado e o valor está vazio, puxa o último preço.
+      if (campo === 'desc' && !i.valor && sugestoes.includes(valor)) novo.valor = ultimoValor(valor)
+      return novo
+    }),
+  }))
   const addItem = () => setDoc((d) => ({ ...d, itens: [...d.itens, itemVazio()] }))
   const tirarItem = (k) => setDoc((d) => ({ ...d, itens: d.itens.length > 1 ? d.itens.filter((_, j) => j !== k) : [itemVazio()] }))
 
@@ -55,14 +69,16 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento }) {
 
       <fieldset>
         <legend>Serviços e materiais</legend>
+        <div className="cabecalho-itens" aria-hidden="true"><span>Descrição</span><span>Qtd</span><span>Valor (R$)</span><span /></div>
         {doc.itens.map((i, k) => (
           <div key={k} className="linha-item">
-            <input className="item-desc" value={i.desc} onChange={(e) => setItem(k, 'desc', e.target.value)} placeholder="Ex.: Troca de disjuntor" aria-label="Descrição" />
+            <input className="item-desc" list="servicos" value={i.desc} onChange={(e) => setItem(k, 'desc', e.target.value)} placeholder="Ex.: Troca de disjuntor" aria-label="Descrição" />
             <input className="item-qtd" value={i.qtd} onChange={(e) => setItem(k, 'qtd', e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Qtd" />
             <input className="item-valor" value={i.valor} onChange={(e) => setItem(k, 'valor', e.target.value)} inputMode="decimal" aria-label="Valor unitário" placeholder="R$ 0,00" />
             <button type="button" className="botao-x" onClick={() => tirarItem(k)} aria-label="Remover item">×</button>
           </div>
         ))}
+        <datalist id="servicos">{sugestoes.map((t) => <option key={t} value={t} />)}</datalist>
         <button type="button" className="botao" onClick={addItem}>+ Adicionar item</button>
         <label className="curto">Desconto (R$)<input value={doc.desconto} onChange={(e) => set('desconto', e.target.value)} inputMode="decimal" placeholder="0,00" /></label>
         <div className="total-ao-vivo">Total: <strong>{dinheiro(total)}</strong></div>

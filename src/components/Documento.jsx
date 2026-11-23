@@ -1,4 +1,4 @@
-import { dinheiro, dataBR, somarDias, totais, lerNumero, porExtenso } from '../lib/formato.js'
+import { dinheiro, dataBR, somarDias, totais, lerNumero, porExtenso, formatarTelefone } from '../lib/formato.js'
 
 // O "papel" do orçamento/recibo: é o que o cliente vê e o que vira PDF.
 export default function Documento({ doc, perfil }) {
@@ -16,7 +16,7 @@ export default function Documento({ doc, perfil }) {
             <strong className="papel-nome">{perfil.nome || 'Seu nome'}</strong>
             {perfil.profissao && <div>{perfil.profissao}</div>}
             <div className="papel-contato">
-              {[perfil.telefone, perfil.cidade, perfil.documento && `CPF/CNPJ ${perfil.documento}`].filter(Boolean).join(' · ')}
+              {[formatarTelefone(perfil.telefone), perfil.cidade, perfil.documento && `CPF/CNPJ ${perfil.documento}`].filter(Boolean).join(' · ')}
             </div>
           </div>
         </div>
@@ -37,7 +37,7 @@ export default function Documento({ doc, perfil }) {
           <span className="rotulo">Cliente</span>
           <strong>{doc.cliente?.nome || '—'}</strong>
           {[doc.cliente?.telefone, doc.cliente?.endereco].filter(Boolean).length > 0 && (
-            <div className="papel-contato">{[doc.cliente?.telefone, doc.cliente?.endereco].filter(Boolean).join(' · ')}</div>
+            <div className="papel-contato">{[formatarTelefone(doc.cliente?.telefone), doc.cliente?.endereco].filter(Boolean).join(' · ')}</div>
           )}
         </div>
       )}

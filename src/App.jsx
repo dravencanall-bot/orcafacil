@@ -29,6 +29,7 @@ export default function App() {
   let conteudo
   if (pagina === 'novo') conteudo = <Editor tipo={a === 'recibo' ? 'recibo' : 'orcamento'} />
   else if (pagina === 'editar') conteudo = <Editor id={a} />
+  else if (pagina === 'copiar') conteudo = <Editor copiaDe={a} />
   else if (pagina === 'recibo-de') conteudo = <Editor deOrcamento={a} tipo="recibo" />
   else if (pagina === 'ver') conteudo = <Ver id={a} />
   else if (pagina === 'perfil') conteudo = <Perfil voltar={b} />
@@ -42,7 +43,7 @@ export default function App() {
         </a>
         <a href="#/perfil" className="botao-link">Meus dados</a>
       </header>
-      <main>{conteudo}</main>
+      <main key={[pagina, a, b].join("/")}>{conteudo}</main>
     </div>
   )
 }

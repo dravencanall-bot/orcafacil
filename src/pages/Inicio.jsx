@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { listarDocs, lerPerfil, salvarDoc } from '../lib/dados.js'
 import { dinheiro, dataBR, totais } from '../lib/formato.js'
+import BotaoInstalar from '../components/BotaoInstalar.jsx'
 
 export const STATUS = {
   rascunho: 'Rascunho', enviado: 'Enviado', aprovado: 'Aprovado', pago: 'Pago', recusado: 'Recusado',
@@ -14,14 +15,22 @@ export default function Inicio() {
   if (!perfil.nome) {
     return (
       <section className="boas-vindas">
-        <h1>Orçamento profissional em 1 minuto</h1>
-        <p>Monte o orçamento, mande pelo WhatsApp e receba por Pix. Sem anúncios.</p>
-        <a className="botao principal grande" href="#/perfil/x/novo">Começar: preencher meus dados</a>
+        <span className="selo">Grátis · Sem anúncios</span>
+        <h1>Orçamento profissional<br />em 1 minuto</h1>
+        <p className="lead">Monte o orçamento no celular, mande pelo WhatsApp e receba por Pix. Para eletricista, pintor, encanador, diarista e todo autônomo.</p>
+        <a className="botao principal grande" href="#/perfil/x/novo">Fazer meu primeiro orçamento</a>
+        <ol className="passos">
+          <li><strong>Preencha seus dados</strong><span>Nome, WhatsApp, logo e chave Pix. Só uma vez.</span></li>
+          <li><strong>Monte o orçamento</strong><span>Serviços, valores e desconto. O total sai sozinho.</span></li>
+          <li><strong>Mande pelo WhatsApp</strong><span>O cliente abre o link, aprova e paga pelo QR Code Pix.</span></li>
+        </ol>
         <ul className="vantagens">
-          <li>✓ Link para o cliente abrir no celular e aprovar</li>
-          <li>✓ QR Code Pix com o valor já preenchido</li>
-          <li>✓ PDF e recibo com valor por extenso</li>
+          <li>✓ Cara de empresa: sua logo e sua cor no orçamento</li>
+          <li>✓ Pix com o valor já preenchido, direto na sua conta</li>
+          <li>✓ Recibo com valor por extenso e PDF</li>
+          <li>✓ Controle do que foi aprovado e pago no mês</li>
         </ul>
+        <BotaoInstalar />
       </section>
     )
   }
@@ -60,7 +69,13 @@ export default function Inicio() {
         </div>
       )}
 
-      {docs.length === 0 && <p className="vazio">Nenhum orçamento ainda. Toque em “Novo orçamento” para fazer o primeiro.</p>}
+      {docs.length === 0 && (
+        <div className="vazio">
+          <p><strong>Tudo pronto, {perfil.nome.split(' ')[0]}!</strong></p>
+          <p>Toque em “Novo orçamento” para fazer o primeiro. Dica: mande um pra você mesmo para ver como o cliente recebe.</p>
+        </div>
+      )}
+      <div className="rodape-inicio"><BotaoInstalar /></div>
 
       <ul className="lista">
         {visiveis.map((d) => (

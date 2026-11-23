@@ -85,3 +85,12 @@ export function porExtenso(valor) {
   if (cent) partes.push(`${inteiroExtenso(cent)} ${cent === 1 ? 'centavo' : 'centavos'}`)
   return partes.join(' e ') || 'zero reais'
 }
+
+// (19) 98888-7777
+export function formatarTelefone(t) {
+  let d = soDigitos(t)
+  if (d.length > 11 && d.startsWith('55')) d = d.slice(2)
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return t || ''
+}
