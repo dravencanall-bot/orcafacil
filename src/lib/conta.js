@@ -14,6 +14,7 @@ export function useConta() {
 }
 
 export async function atualizarConta() {
+  if (!nuvemAtiva) return null
   const [conta, admin] = await Promise.all([minhaConta(), supabase.rpc('eh_admin').then((r) => r.data === true, () => false)])
   mudar({ conta, admin })
   return conta
