@@ -266,5 +266,22 @@ revoke all on function public.admin_dar_pro(uuid, integer) from anon;
 revoke all on function public.admin_tirar_pro(uuid) from anon;
 revoke all on function public.admin_recusar_pedido(bigint) from anon;
 
+-- Permissões de acesso da API (necessário quando o projeto foi criado sem
+-- "Grant API access to new tables automatically"). A segurança de verdade são as regras (RLS) acima.
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.perfis, public.docs to authenticated;
+grant select on public.assinaturas, public.pagamentos to authenticated;
+grant select on public.config to anon, authenticated;
+grant update on public.config to authenticated;
+grant select, insert on public.pedidos to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant usage on schema public to service_role;
+    grant all on all tables in schema public to service_role;
+    grant all on all sequences in schema public to service_role;
+  end if;
+end $$;
+
 -- Avisa a API do Supabase que as tabelas mudaram.
 notify pgrst, 'reload schema';
