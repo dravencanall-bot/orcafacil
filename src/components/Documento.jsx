@@ -6,6 +6,17 @@ export default function Documento({ doc, perfil, marca = true }) {
   const recibo = doc.tipo === 'recibo'
   const cor = perfil.cor || '#0f766e'
   const validade = doc.validadeDias ? somarDias(doc.data, doc.validadeDias) : null
+  const preenchidos = (doc.itens || []).filter((i) => i.desc || lerNumero(i.valor))
+  const grupos = [
+    { titulo: 'Mão de obra', itens: preenchidos.filter((i) => i.tipo !== 'material') },
+    { titulo: 'Materiais', itens: preenchidos.filter((i) => i.tipo === 'material') },
+  ].filter((g) => g.itens.length).map((g) => ({ ...g, soma: g.itens.reduce((s, i) => s + lerNumero(i.qtd) * lerNumero(i.valor), 0) }))
+  const condicoes = [
+    ['Pagamento', doc.pagamento],
+    !recibo && ['Prazo de execução', doc.prazo],
+    ['Garantia', doc.garantia],
+    !recibo && validade && ['Validade', `Até ${dataBR(validade)}`],
+  ].filter((c) => c && c[1])
 
   return (
     <article className="papel" style={{ '--cor': cor }}>
@@ -42,21 +53,27 @@ export default function Documento({ doc, perfil, marca = true }) {
         </div>
       )}
 
-      <table className="papel-itens">
-        <thead>
-          <tr><th>Descrição</th><th className="num">Qtd</th><th className="num">Valor</th><th className="num">Total</th></tr>
-        </thead>
-        <tbody>
-          {(doc.itens || []).filter((i) => i.desc || lerNumero(i.valor)).map((i, k) => (
-            <tr key={k}>
-              <td>{i.desc}</td>
-              <td className="num">{lerNumero(i.qtd)}</td>
-              <td className="num">{dinheiro(lerNumero(i.valor))}</td>
-              <td className="num">{dinheiro(lerNumero(i.qtd) * lerNumero(i.valor))}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {grupos.map((g) => (
+        <div key={g.titulo} className="papel-grupo">
+          {grupos.length > 1 && <div className="papel-grupo-titulo">{g.titulo}</div>}
+          <table className="papel-itens">
+            <thead>
+              <tr><th>Descrição</th><th className="num">Qtd</th><th className="num">Valor</th><th className="num">Total</th></tr>
+            </thead>
+            <tbody>
+              {g.itens.map((i, k) => (
+                <tr key={k}>
+                  <td>{i.desc}</td>
+                  <td className="num">{lerNumero(i.qtd).toLocaleString('pt-BR')}</td>
+                  <td className="num">{dinheiro(lerNumero(i.valor))}</td>
+                  <td className="num">{dinheiro(lerNumero(i.qtd) * lerNumero(i.valor))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {grupos.length > 1 && <div className="papel-grupo-sub"><span>Subtotal {g.titulo.toLowerCase()}</span><span>{dinheiro(g.soma)}</span></div>}
+        </div>
+      ))}
 
       <div className="papel-totais">
         {desconto > 0 && (<>
@@ -66,13 +83,12 @@ export default function Documento({ doc, perfil, marca = true }) {
         <div className="papel-total"><span>Total</span><span>{dinheiro(total)}</span></div>
       </div>
 
-      {(doc.pagamento || validade || doc.obs) && (
+      {condicoes.length > 0 && (
         <div className="papel-condicoes">
-          {doc.pagamento && <p><span className="rotulo">Pagamento</span>{doc.pagamento}</p>}
-          {!recibo && validade && <p><span className="rotulo">Validade</span>Orçamento válido até {dataBR(validade)}</p>}
-          {doc.obs && <p><span className="rotulo">Observações</span>{doc.obs}</p>}
+          {condicoes.map(([r, v]) => <div key={r} className="papel-cond"><span className="rotulo">{r}</span>{v}</div>)}
         </div>
       )}
+      {doc.obs && <p className="papel-obs"><span className="rotulo">Observações</span>{doc.obs}</p>}
 
       {recibo && (
         <div className="papel-assinatura">
