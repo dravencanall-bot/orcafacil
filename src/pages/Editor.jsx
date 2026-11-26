@@ -1,17 +1,26 @@
 import { useState } from 'react'
-import { ErroLimite, pegarDoc, salvarDoc, novoId, proximoNumero, servicosUsados, ultimoValor } from '../lib/dados.js'
+import { ErroLimite, listarDocs, pegarDoc, salvarDoc, novoId, proximoNumero, servicosUsados, ultimoValor } from '../lib/dados.js'
 import { dinheiro, hojeISO, totais, lerNumero } from '../lib/formato.js'
 import { ir } from '../lib/navegar.js'
 import { atualizarConta } from '../lib/conta.js'
+import { MODELOS } from '../lib/modelos.js'
 
-const itemVazio = () => ({ desc: '', qtd: '1', valor: '' })
+const itemVazio = (tipo = 'servico') => ({ desc: '', qtd: '1', valor: '', tipo })
+const ehMaterial = (i) => i.tipo === 'material'
+
+// Garantia, prazo e condições do último orçamento viram o padrão do próximo.
+function ultimoOrcamento() {
+  return listarDocs().find((d) => d.tipo !== 'recibo')
+}
 
 function docNovo(tipo) {
+  const ultimo = tipo === 'recibo' ? null : ultimoOrcamento()
   return {
     id: novoId(), tipo, numero: proximoNumero(), data: hojeISO(), criadoEm: new Date().toISOString(),
-    validadeDias: 15, cliente: { nome: '', telefone: '', endereco: '' },
-    itens: [itemVazio()], desconto: '', pagamento: tipo === 'recibo' ? 'Pix' : '50% no início e 50% na entrega, via Pix',
-    obs: '', status: 'rascunho',
+    validadeDias: ultimo?.validadeDias || 15, cliente: { nome: '', telefone: '', endereco: '' },
+    itens: [itemVazio()], desconto: '',
+    pagamento: tipo === 'recibo' ? 'Pix' : ultimo?.pagamento || '50% no início e 50% na entrega, via Pix',
+    garantia: ultimo?.garantia || '', prazo: '', obs: '', status: 'rascunho',
   }
 }
 
@@ -21,11 +30,11 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
     if (id) return pegarDoc(id) || docNovo(tipo)
     if (copiaDe) {
       const o = pegarDoc(copiaDe)
-      if (o) return { ...docNovo(o.tipo), itens: o.itens, desconto: o.desconto, pagamento: o.pagamento, obs: o.obs, validadeDias: o.validadeDias }
+      if (o) return { ...docNovo(o.tipo), itens: o.itens, desconto: o.desconto, pagamento: o.pagamento, obs: o.obs, validadeDias: o.validadeDias, garantia: o.garantia || '', prazo: o.prazo || '' }
     }
     if (deOrcamento) {
       const o = pegarDoc(deOrcamento)
-      if (o) return { ...docNovo('recibo'), cliente: o.cliente, itens: o.itens, desconto: o.desconto, origem: o.id }
+      if (o) return { ...docNovo('recibo'), cliente: o.cliente, itens: o.itens, desconto: o.desconto, garantia: o.garantia || '', origem: o.id }
     }
     return docNovo(tipo)
   })
@@ -46,8 +55,26 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
       return novo
     }),
   }))
-  const addItem = () => setDoc((d) => ({ ...d, itens: [...d.itens, itemVazio()] }))
+  const addItem = (tipo) => setDoc((d) => ({ ...d, itens: [...d.itens, itemVazio(tipo)] }))
   const tirarItem = (k) => setDoc((d) => ({ ...d, itens: d.itens.length > 1 ? d.itens.filter((_, j) => j !== k) : [itemVazio()] }))
+  const vazio = doc.itens.every((i) => !i.desc.trim() && !String(i.valor).trim())
+  const usarModelo = (mod) => {
+    if (!vazio && !confirm(`Trocar os itens atuais pelo modelo "${mod.nome}"?`)) return
+    setDoc((d) => ({
+      ...d,
+      itens: mod.itens.map((i) => ({ ...i, valor: ultimoValor(i.desc) || '' })),
+      garantia: mod.garantia || d.garantia, prazo: mod.prazo || d.prazo, obs: mod.obs || d.obs,
+    }))
+  }
+  const linhas = (material) => doc.itens.map((i, k) => [i, k]).filter(([i]) => ehMaterial(i) === material).map(([i, k]) => (
+    <div key={k} className="linha-item">
+      <input className="item-desc" list="servicos" value={i.desc} onChange={(e) => setItem(k, 'desc', e.target.value)} placeholder={material ? 'Ex.: Tubo de cobre (metro)' : 'Ex.: Instalação de ar split'} aria-label="Descrição" />
+      <input className="item-qtd" value={i.qtd} onChange={(e) => setItem(k, 'qtd', e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Qtd" />
+      <input className="item-valor" value={i.valor} onChange={(e) => setItem(k, 'valor', e.target.value)} inputMode="decimal" aria-label="Valor unitário" placeholder="Valor R$" />
+      <button type="button" className="botao-x" onClick={() => tirarItem(k)} aria-label="Remover item">×</button>
+    </div>
+  ))
+  const temMaterial = doc.itens.some(ehMaterial)
 
   const { total } = totais(doc)
 
@@ -72,6 +99,15 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
     <form onSubmit={salvar} className="formulario">
       <h1>{id ? 'Editar' : 'Novo'} {recibo ? 'recibo' : 'orçamento'}</h1>
 
+      {!recibo && !id && (
+        <div className="modelos">
+          <span className="rotulo">Começar com um modelo pronto</span>
+          <div className="chips">
+            {MODELOS.map((mod) => <button type="button" key={mod.id} className="chip" onClick={() => usarModelo(mod)}>{mod.nome}</button>)}
+          </div>
+        </div>
+      )}
+
       <fieldset>
         <legend>Cliente</legend>
         <label>Nome do cliente*<input value={doc.cliente.nome} onChange={(e) => setCliente('nome', e.target.value)} placeholder="Ex.: Dona Maria" autoFocus={!id} /></label>
@@ -80,18 +116,24 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
       </fieldset>
 
       <fieldset>
-        <legend>Serviços e materiais</legend>
+        <legend>Serviços (mão de obra)</legend>
         <div className="cabecalho-itens" aria-hidden="true"><span>Descrição</span><span>Qtd</span><span>Valor (R$)</span><span /></div>
-        {doc.itens.map((i, k) => (
-          <div key={k} className="linha-item">
-            <input className="item-desc" list="servicos" value={i.desc} onChange={(e) => setItem(k, 'desc', e.target.value)} placeholder="Ex.: Troca de disjuntor" aria-label="Descrição" />
-            <input className="item-qtd" value={i.qtd} onChange={(e) => setItem(k, 'qtd', e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Qtd" />
-            <input className="item-valor" value={i.valor} onChange={(e) => setItem(k, 'valor', e.target.value)} inputMode="decimal" aria-label="Valor unitário" placeholder="R$ 0,00" />
-            <button type="button" className="botao-x" onClick={() => tirarItem(k)} aria-label="Remover item">×</button>
-          </div>
-        ))}
+        {linhas(false)}
+        <button type="button" className="botao" onClick={() => addItem('servico')}>+ Adicionar serviço</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Materiais e peças</legend>
+        {temMaterial ? (
+          <div className="cabecalho-itens" aria-hidden="true"><span>Descrição</span><span>Qtd</span><span>Valor (R$)</span><span /></div>
+        ) : <p className="dica">Opcional. Separar material de mão de obra passa mais confiança ao cliente.</p>}
+        {linhas(true)}
         <datalist id="servicos">{sugestoes.map((t) => <option key={t} value={t} />)}</datalist>
-        <button type="button" className="botao" onClick={addItem}>+ Adicionar item</button>
+        <button type="button" className="botao" onClick={() => addItem('material')}>+ Adicionar material</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Total</legend>
         <label className="curto">Desconto (R$)<input value={doc.desconto} onChange={(e) => set('desconto', e.target.value)} inputMode="decimal" placeholder="0,00" /></label>
         <div className="total-ao-vivo">Total: <strong>{dinheiro(total)}</strong></div>
       </fieldset>
@@ -103,7 +145,9 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
           {!recibo && <label>Validade (dias)<input value={doc.validadeDias} onChange={(e) => set('validadeDias', e.target.value)} inputMode="numeric" /></label>}
         </div>
         <label>{recibo ? 'Forma de pagamento' : 'Condições de pagamento'}<input value={doc.pagamento} onChange={(e) => set('pagamento', e.target.value)} /></label>
-        <label>Observações<textarea value={doc.obs} onChange={(e) => set('obs', e.target.value)} rows="3" placeholder={recibo ? '' : 'Ex.: Material incluso. Garantia de 90 dias.'} /></label>
+        {!recibo && <label>Prazo de execução<input value={doc.prazo || ''} onChange={(e) => set('prazo', e.target.value)} placeholder="Ex.: 1 dia" /></label>}
+        <label>Garantia<input value={doc.garantia || ''} onChange={(e) => set('garantia', e.target.value)} placeholder="Ex.: 90 dias na instalação" /></label>
+        <label>Observações<textarea value={doc.obs} onChange={(e) => set('obs', e.target.value)} rows="3" placeholder={recibo ? '' : 'Ex.: Ponto elétrico por conta do cliente.'} /></label>
       </fieldset>
 
       {erro && <p className="erro">{erro}</p>}

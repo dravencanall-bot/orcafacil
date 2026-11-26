@@ -180,3 +180,35 @@ h1 { font-size: 1.4rem; margin: 8px 0 16px; }
 .busca input { flex: 1; min-width: 0; padding: 10px 12px; font: inherit; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 10px; }
 .admin .formulario { margin-top: 8px; }
 .pix .botao.grande { max-width: 360px; }
+
+/* Orçamento: grupos (mão de obra / materiais) e condições em caixinhas */
+.papel-grupo { margin-top: 10px; }
+.papel-grupo-titulo { font-weight: 800; color: var(--cor); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; margin-top: 10px; }
+.papel-grupo-sub { display: flex; justify-content: flex-end; gap: 16px; font-size: .85rem; color: var(--suave); padding: 6px 4px 0; }
+.papel-condicoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 18px; font-size: .9rem; }
+.papel-cond { background: #f8fafc; border: 1px solid var(--borda); border-left: 3px solid var(--cor); border-radius: 8px; padding: 8px 10px; }
+.papel-obs { margin: 14px 0 0; white-space: pre-wrap; font-size: .9rem; }
+.papel-itens tbody tr:nth-child(even) td { background: #f8fafc; }
+@media print {
+  .papel-cond, .papel-itens tbody tr:nth-child(even) td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .papel-grupo, .papel-condicoes { break-inside: avoid; }
+}
+
+/* Modelos prontos no editor */
+.modelos { margin: 0 0 14px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.chip { border: 1px solid var(--borda); background: #fff; border-radius: 99px; padding: 8px 12px; font: inherit; font-size: .9rem; cursor: pointer; }
+.chip:active { background: #ccfbf1; }
+
+/* Página de exemplo */
+.faixa-exemplo { background: #fef3c7; color: #713f12; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; font-size: .95rem; }
+.pix-exemplo { border-style: dashed; color: var(--suave); }
+.validade-vencida { background: #fee2e2; color: #991b1b; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: .92rem; }
+.ver-exemplo { margin-top: 8px; }
+/* No celular, a descrição do item ocupa a linha toda (dá pra ler o texto inteiro) */
+@media (max-width: 560px) {
+  .linha-item, .cabecalho-itens { grid-template-columns: 64px 1fr 36px !important; gap: 6px !important; }
+  .linha-item .item-desc { grid-column: 1 / -1; }
+  .linha-item { padding-bottom: 8px; border-bottom: 1px dashed var(--borda); }
+  .cabecalho-itens { display: none; }
+}

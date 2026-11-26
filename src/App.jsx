@@ -34,6 +34,7 @@ export default function App() {
 
   if (pagina === 'v') return <Publico codigo={a} />
   if (pagina === 'o') return <Publico id={a} />
+  if (pagina === 'exemplo') return <Publico exemplo />
 
   let conteudo
   if (nuvemAtiva && carregando) {
