@@ -127,7 +127,6 @@ h1 { font-size: 1.4rem; margin: 8px 0 16px; }
 .passos strong { display: block; }
 .passos span { color: var(--suave); font-size: .92rem; }
 .vantagens { margin: 16px auto; line-height: 1.45; display: grid; gap: 8px; text-align: left; }
-.instalar { width: 100%; margin-top: 8px; border-style: dashed; }
 .rodape-inicio { margin-top: 20px; }
 .vazio p { margin: 6px 0; }
 .cabecalho-itens { display: grid; grid-template-columns: 1fr 56px 96px 36px; gap: 6px; font-size: .75rem; color: var(--suave); font-weight: 700; margin: 6px 0 4px; }
@@ -212,3 +211,38 @@ h1 { font-size: 1.4rem; margin: 8px 0 16px; }
   .linha-item { padding-bottom: 8px; border-bottom: 1px dashed var(--borda); }
   .cabecalho-itens { display: none; }
 }
+
+/* Instalar o app */
+.instalar-cartao { position: relative; text-align: left; margin: 20px 0; padding: 16px; border-radius: 18px; color: #fff;
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 55%, #134e4a 100%); box-shadow: 0 10px 30px rgba(15,118,110,.35); }
+.instalar-topo { display: flex; gap: 12px; align-items: center; }
+.instalar-topo img { border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,.25); flex: none; background: #fff; }
+.instalar-topo strong { display: block; font-size: 1.1rem; line-height: 1.25; }
+.instalar-topo span { display: block; opacity: .85; font-size: .92rem; margin-top: 2px; }
+.instalar-fechar { position: absolute; top: 6px; right: 8px; border: none; background: none; color: #fff; opacity: .7; font-size: 1.5rem; cursor: pointer; width: 36px; height: 36px; }
+.instalar-vantagens { list-style: none; padding: 0; margin: 14px 0; display: flex; flex-wrap: wrap; gap: 6px; line-height: 1.2; }
+.instalar-vantagens li { background: rgba(255,255,255,.14); border-radius: 99px; padding: 6px 10px; font-size: .85rem; }
+.botao-instalar { position: relative; overflow: hidden; width: 100%; min-height: 54px; border: none; border-radius: 14px; cursor: pointer;
+  background: #fbbf24; color: #422006; font: inherit; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 4px 0 #b45309; animation: pulsar-instalar 2.2s ease-in-out infinite; }
+.botao-instalar::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.6), transparent); animation: brilho-instalar 3s ease-in-out infinite; }
+.botao-instalar:active { transform: translateY(3px); box-shadow: 0 1px 0 #b45309; }
+@keyframes pulsar-instalar { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes brilho-instalar { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) { .botao-instalar, .botao-instalar::after { animation: none; } }
+.instalar-cartao.feito { background: #dcfce7; color: #14532d; box-shadow: none; border: 1px solid #86efac; }
+.instalar-cartao.feito strong, .instalar-cartao.feito span { display: block; }
+.instalar-cartao.feito span { margin-top: 4px; font-size: .92rem; }
+
+.instalar-fundo { position: fixed; inset: 0; z-index: 50; background: rgba(15,23,42,.55); display: flex; align-items: flex-end; justify-content: center; animation: aparecer .2s ease-out; }
+.instalar-folha { position: relative; width: 100%; max-width: 480px; background: #fff; border-radius: 22px 22px 0 0; padding: 20px 20px calc(24px + env(safe-area-inset-bottom)); text-align: center; animation: subir .25s ease-out; }
+.instalar-folha img { border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+.instalar-folha h2 { margin: 10px 0 14px; font-size: 1.3rem; }
+.instalar-folha ol { list-style: none; padding: 0; margin: 0 0 18px; text-align: left; display: grid; gap: 12px; }
+.instalar-folha li { display: flex; gap: 12px; align-items: flex-start; font-size: 1.02rem; line-height: 1.4; }
+.instalar-folha li small { display: block; color: var(--suave); }
+.instalar-folha .num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--verde); color: #fff; font-weight: 800; display: grid; place-items: center; }
+.icone-compartilhar { vertical-align: -3px; color: #2563eb; }
+@keyframes aparecer { from { opacity: 0; } }
+@keyframes subir { from { transform: translateY(40px); opacity: 0; } }

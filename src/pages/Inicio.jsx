@@ -57,7 +57,7 @@ export default function Inicio() {
           <p>Toque em “Novo orçamento” para fazer o primeiro. Dica: mande um pra você mesmo para ver como o cliente recebe.</p>
         </div>
       )}
-      <div className="rodape-inicio"><BotaoInstalar /></div>
+      <BotaoInstalar podeFechar />
 
       <ul className="lista">
         {visiveis.map((d) => (
