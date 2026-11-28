@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, nuvemAtiva, PLANOS } from '../lib/supabase.js'
 import { useConta, marcarEsperandoPro } from '../lib/conta.js'
 import { dataBR } from '../lib/formato.js'
+import { RECURSOS_PRO } from '../lib/pro.js'
 
 // Comemoração que aparece no app do usuário quando o dono libera o Pro dele.
 const chave = (uid) => `orcafechou_pro_visto_${uid}`
@@ -75,8 +76,7 @@ export default function ProAtivado() {
         </div>
         <ul className="festa-lista">
           <li>✓ Orçamentos ilimitados</li>
-          <li>✓ Sem a marca “Feito com OrçaFechou”</li>
-          <li>✓ Sem anúncios, sempre</li>
+          {RECURSOS_PRO.map((r) => <li key={r.id}>{r.icone} {r.titulo}</li>)}
         </ul>
         <a className="botao principal grande" href="#/novo" onClick={fechar}>Fazer um orçamento agora</a>
         <button className="botao-link-simples" onClick={fechar}>Fechar</button>
