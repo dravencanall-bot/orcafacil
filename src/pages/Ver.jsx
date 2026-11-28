@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Documento from '../components/Documento.jsx'
 import PixBox from '../components/PixBox.jsx'
-import { pegarDoc, lerPerfil, salvarDoc, apagarDoc, linkPublico } from '../lib/dados.js'
+import { pegarDoc, lerPerfil, salvarDoc, apagarDoc, linkPublico, comStatus } from '../lib/dados.js'
+import { usePro } from '../lib/pro.js'
+import { useAberturas, marcarVisto } from '../lib/aberturas.js'
+import { avisar, tempoAtras } from '../lib/avisos.js'
+import { mensagemCobranca } from '../lib/cobranca.js'
+import { nuvemAtiva } from '../lib/supabase.js'
+import { soltarConfete } from '../components/Confete.jsx'
 import { dinheiro, totais, linkWhatsApp } from '../lib/formato.js'
 import { ir } from '../lib/navegar.js'
 import { tipoFinal } from '../lib/pix.js'
@@ -12,6 +18,10 @@ export default function Ver({ id }) {
   const [aviso, setAviso] = useState('')
   const perfil = lerPerfil()
   const { conta } = useConta()
+  const pro = usePro()
+  const { mapa, bloqueado, pronto } = useAberturas()
+  const visto = mapa[id]
+  useEffect(() => { if (visto) marcarVisto(id) }, [id, visto])
 
   if (!doc) return <p className="vazio">Documento não encontrado. <a href="#/">Voltar</a></p>
 
@@ -25,20 +35,29 @@ export default function Ver({ id }) {
     ? `Olá${primeiroNome ? ', ' + primeiroNome : ''}! Segue o recibo do serviço (${dinheiro(total)}):\n${link}\n\nObrigado pela confiança! — ${perfil.nome}`
     : `Olá${primeiroNome ? ', ' + primeiroNome : ''}! Segue o orçamento nº ${String(doc.numero).padStart(4, '0')} no valor de ${dinheiro(total)}.\n\nVeja os detalhes e aprove por aqui:\n${link}\n\nQualquer dúvida é só chamar. — ${perfil.nome}`
 
-  const atualizar = (mudanca) => {
-    const novo = { ...doc, ...mudanca }
+  const mudarStatus = (status) => {
+    const novo = comStatus(doc, status)
     setDoc(novo)
     salvarDoc(novo).catch((e) => setAviso(e.message))
+    if (status === 'pago') { soltarConfete(); avisar(`💸 ${dinheiro(total)} no bolso!`) }
+    if (status === 'aprovado') avisar('Fechou! 🤝 Agora é só receber.')
   }
 
   const enviar = () => {
-    if (!recibo && (doc.status || 'rascunho') === 'rascunho') atualizar({ status: 'enviado' })
+    if (!recibo && (doc.status || 'rascunho') === 'rascunho') mudarStatus('enviado')
     window.open(linkWhatsApp(doc.cliente?.telefone, texto), '_blank')
   }
 
+  const cobrar = () => {
+    if (!pro) { location.hash = '/plano'; return }
+    window.open(linkWhatsApp(doc.cliente?.telefone, mensagemCobranca(doc, perfil, link)), '_blank')
+    const novo = { ...doc, cobradoEm: new Date().toISOString(), cobrancas: (doc.cobrancas || 0) + 1 }
+    setDoc(novo)
+    salvarDoc(novo).catch(() => {})
+  }
+
   const copiarLink = async () => {
-    try { await navigator.clipboard.writeText(link); setAviso('Link copiado!') } catch { setAviso(link) }
-    setTimeout(() => setAviso(''), 3000)
+    try { await navigator.clipboard.writeText(link); avisar('Link copiado!') } catch { setAviso(link) }
   }
 
   const apagar = () => {
@@ -47,9 +66,24 @@ export default function Ver({ id }) {
   }
 
   return (
-    <section>
+    <section className="pagina">
       <div className="acoes nao-imprimir">
-        <button className="botao whatsapp grande" onClick={enviar}>Enviar no WhatsApp</button>
+        {!recibo && nuvemAtiva && pronto && (doc.status || 'rascunho') !== 'rascunho' && (
+          pro ? (
+            <div className={`faixa-visto ${visto ? 'sim' : ''}`}>
+              <span className="olhinho">👀</span>
+              {visto ? <span><strong>O cliente abriu {visto.vezes === 1 ? '1 vez' : `${visto.vezes} vezes`}</strong> · última {tempoAtras(visto.ultima)}</span>
+                : <span>O cliente ainda não abriu o link.</span>}
+            </div>
+          ) : bloqueado && (
+            <a href="#/plano" className="faixa-visto travada"><span className="olhinho">🔒</span><span>Quer saber se o cliente já abriu? <strong>Seja Pro</strong></span></a>
+          )
+        )}
+        {!recibo && doc.status === 'aprovado' ? (
+          <button className="botao dourado grande" onClick={cobrar}>💰 Cobrar no WhatsApp {!pro && '🔒'}</button>
+        ) : (
+          <button className="botao whatsapp grande" onClick={enviar}>Enviar no WhatsApp</button>
+        )}
         <div className="acoes-linha">
           <button className="botao" onClick={copiarLink}>Copiar link</button>
           <button className="botao" onClick={() => window.print()}>Baixar PDF</button>
@@ -58,8 +92,9 @@ export default function Ver({ id }) {
         </div>
         {!recibo && (
           <div className="acoes-linha">
-            {doc.status !== 'aprovado' && doc.status !== 'pago' && <button className="botao" onClick={() => atualizar({ status: 'aprovado' })}>Marcar aprovado</button>}
-            {doc.status !== 'pago' && <button className="botao" onClick={() => atualizar({ status: 'pago' })}>Marcar pago</button>}
+            {doc.status !== 'aprovado' && doc.status !== 'pago' && <button className="botao" onClick={() => mudarStatus('aprovado')}>🤝 Marcar aprovado</button>}
+            {doc.status !== 'pago' && <button className="botao" onClick={() => mudarStatus('pago')}>💸 Marcar pago</button>}
+            {doc.status === 'aprovado' && <button className="botao" onClick={enviar}>Reenviar link</button>}
             <a className="botao" href={`#/recibo-de/${doc.id}`}>Gerar recibo</a>
           </div>
         )}
@@ -68,7 +103,7 @@ export default function Ver({ id }) {
         {!perfil.pixChave && !recibo && <p className="dica">Dica: cadastre sua chave Pix em <a href="#/perfil">Meus dados</a> para o cliente pagar pelo link com QR Code.</p>}
       </div>
 
-      <Documento doc={doc} perfil={perfil} marca={!conta?.pro} />
+      <Documento doc={doc} perfil={perfil} marca={!conta?.pro} pro={pro} />
       {!recibo && <PixBox perfil={perfil} valor={total} identificador={`ORC${doc.numero}`} />}
 
       <button className="botao-perigo nao-imprimir" onClick={apagar}>Apagar {nomeTipo}</button>

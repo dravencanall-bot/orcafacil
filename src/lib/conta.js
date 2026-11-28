@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { supabase, nuvemAtiva } from './supabase.js'
 import { sincronizar, minhaConta, limparAparelho } from './dados.js'
+import { baixarCatalogo } from './catalogo.js'
+import { atualizarAberturas, limparAberturas } from './aberturas.js'
 
 let estado = { carregando: nuvemAtiva, user: null, conta: null, admin: false, erro: '', pendentes: 0 }
 const ouvintes = new Set()
@@ -52,8 +54,10 @@ async function aoEntrar(user) {
   mudar({ carregando: true, user })
   try {
     await sincronizar(user)
+    await baixarCatalogo(user).catch(() => {})
     sincronizadoPara = user.id
     await atualizarConta()
+    atualizarAberturas()
     mudar({ carregando: false, erro: '' })
   } catch (e) {
     mudar({ carregando: false, erro: e.message })
@@ -75,6 +79,7 @@ if (nuvemAtiva) {
 export async function sair() {
   await supabase.auth.signOut()
   limparAparelho()
+  limparAberturas()
   location.hash = '/'
 }
 
