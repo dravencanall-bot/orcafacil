@@ -1,18 +1,34 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase.js'
-import { useConta } from '../lib/conta.js'
+import { supabase, PLANOS } from '../lib/supabase.js'
+import { useConta, atualizarPendentes } from '../lib/conta.js'
 import { detectarTipo } from '../lib/pix.js'
-import { dataBR, formatarTelefone, linkWhatsApp } from '../lib/formato.js'
+import { dataBR, dinheiro, formatarTelefone, linkWhatsApp } from '../lib/formato.js'
+
+// "há 5 min", "há 3 h", "há 2 dias"
+function haQuanto(iso) {
+  if (!iso) return ''
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000))
+  if (min < 1) return 'agora mesmo'
+  if (min < 60) return `há ${min} min`
+  const h = Math.round(min / 60)
+  if (h < 24) return `há ${h} h`
+  const d = Math.round(h / 24)
+  return `há ${d} ${d === 1 ? 'dia' : 'dias'}`
+}
+const horaBR = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '')
+const soZap = (t) => String(t || '').replace(/\D/g, '').length >= 10
+const primeiroNome = (n) => String(n || '').trim().split(/\s+/)[0] || ''
 
 // Painel do dono do app: configurar o Pix de recebimento e liberar o Pro de quem pagou.
 export default function Admin() {
-  const { admin } = useConta()
+  const { admin, resumo } = useConta()
   const [cfg, setCfg] = useState(null)
   const [msgCfg, setMsgCfg] = useState('')
   const [busca, setBusca] = useState('')
   const [lista, setLista] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
+  const [liberado, setLiberado] = useState(null)
 
   const carregar = useCallback(async (b = '') => {
     setCarregando(true)
@@ -20,6 +36,7 @@ export default function Admin() {
     if (error) setErro('Não foi possível carregar: ' + error.message)
     setLista(data || [])
     setCarregando(false)
+    atualizarPendentes()
   }, [])
 
   useEffect(() => {
@@ -42,10 +59,11 @@ export default function Admin() {
     setMsgCfg(error ? 'Erro ao salvar: ' + error.message : '✓ Salvo! Os clientes já veem esse Pix ao assinar.')
   }
 
-  const acao = async (nome, args, confirmar) => {
+  const acao = async (nome, args, confirmar, u) => {
     if (confirmar && !confirm(confirmar)) return
-    const { error } = await supabase.rpc(nome, args)
+    const { data, error } = await supabase.rpc(nome, args)
     if (error) return alert('Erro: ' + error.message)
+    if (nome === 'admin_dar_pro' && u) setLiberado({ ...u, ate: data })
     carregar(busca)
   }
 
@@ -56,20 +74,37 @@ export default function Admin() {
 
   const linha = (u) => {
     const ativo = u.pro_ate && new Date(u.pro_ate) > new Date()
+    const pedido = u.pedido_id ? PLANOS[u.pedido_plano] : null
+    const zap = u.telefone && soZap(u.telefone)
     return (
-      <li key={u.user_id} className="cartao usuario">
+      <li key={u.user_id} className={`cartao usuario ${u.pedido_id ? 'esperando' : ''}`}>
         <div>
           <strong>{u.nome || 'Sem nome'}</strong>
-          <div className="sub">{u.email}</div>
+          {(u.profissao || u.cidade) && <span className="sub"> · {[u.profissao, u.cidade].filter(Boolean).join(' · ')}</span>}
+          <div className="sub">{u.email}{u.telefone && <> · {formatarTelefone(u.telefone)}</>}</div>
+          {pedido && (
+            <div className="pedido-info">
+              <div><span>Pediu</span><strong>Pro {pedido.nome}</strong></div>
+              <div><span>Valor a conferir</span><strong>{dinheiro(pedido.valor)}</strong></div>
+              <div><span>Quando</span><strong>{dataBR(u.pedido_em)} às {horaBR(u.pedido_em)}</strong><em>{haQuanto(u.pedido_em)}</em></div>
+              <div><span>Código no Pix</span><strong>PRO{u.user_id.slice(0, 8)}</strong></div>
+            </div>
+          )}
           <div className="sub">
-            {ativo ? <span className="tag pro">Pro até {dataBR(u.pro_ate)}</span> : <span className="tag">Grátis · {u.usados_mes} orç. no mês</span>}
-            {u.pedido_id && <span className="tag pedido">Pediu {u.pedido_plano} em {dataBR(u.pedido_em)}</span>}
+            {ativo ? <span className="tag pro">Pro até {dataBR(u.pro_ate)}</span> : <span className="tag">Grátis · {u.usados_mes} de 5 no mês</span>}
+            {u.total_orcamentos != null && <span className="tag">{u.total_orcamentos} orç. · {u.total_recibos} recibos no total</span>}
+            {u.vezes_pagou > 0 && <span className="tag pago">Já pagou {dinheiro(u.total_pago)} ({u.vezes_pagou}x)</span>}
+            {u.pedidos_recusados > 0 && <span className="tag recusado">{u.pedidos_recusados} pedido(s) recusado(s)</span>}
+          </div>
+          <div className="sub datas">
+            Cadastro em {dataBR(u.criado_em)}{u.ultimo_acesso && <> · último acesso {haQuanto(u.ultimo_acesso)}</>}
           </div>
         </div>
         <div className="acoes-linha">
-          <button className={u.pedido_plano === 'mensal' ? 'botao principal' : 'botao'} onClick={() => acao('admin_dar_pro', { uid: u.user_id, dias: 30 }, `Liberar 30 dias de Pro para ${u.email}?`)}>+30 dias</button>
-          <button className={u.pedido_plano === 'anual' ? 'botao principal' : 'botao'} onClick={() => acao('admin_dar_pro', { uid: u.user_id, dias: 365 }, `Liberar 1 ano de Pro para ${u.email}?`)}>+1 ano</button>
+          <button className={u.pedido_plano === 'mensal' ? 'botao principal' : 'botao'} onClick={() => acao('admin_dar_pro', { uid: u.user_id, dias: 30 }, `Liberar 30 dias de Pro para ${u.email}?`, u)}>+30 dias</button>
+          <button className={u.pedido_plano === 'anual' ? 'botao principal' : 'botao'} onClick={() => acao('admin_dar_pro', { uid: u.user_id, dias: 365 }, `Liberar 1 ano de Pro para ${u.email}?`, u)}>+1 ano</button>
           {u.pedido_id && <button className="botao" onClick={() => acao('admin_recusar_pedido', { pid: u.pedido_id }, 'Recusar este pedido? (use quando o Pix não caiu)')}>Recusar</button>}
+          {zap && <a className="botao" href={linkWhatsApp(u.telefone, `Oi${u.nome ? ' ' + primeiroNome(u.nome) : ''}! Aqui é do OrçaFechou.`)} target="_blank" rel="noreferrer">WhatsApp</a>}
           {ativo && <button className="botao" onClick={() => acao('admin_tirar_pro', { uid: u.user_id }, `Tirar o Pro de ${u.email}?`)}>Tirar Pro</button>}
         </div>
       </li>
@@ -80,14 +115,32 @@ export default function Admin() {
     <section className="admin">
       <h1>Painel do dono</h1>
       <div className="resumo">
-        <div><span>Usuários</span><strong>{lista.length}{lista.length === 200 ? '+' : ''}</strong></div>
-        <div><span>Pro ativos</span><strong>{proAtivos}</strong></div>
+        <div><span>Usuários</span><strong>{resumo ? resumo.usuarios : `${lista.length}${lista.length === 200 ? '+' : ''}`}</strong></div>
+        <div><span>Pro ativos</span><strong>{resumo ? resumo.pro_ativos : proAtivos}</strong></div>
+        <div className={pendentes.length ? 'destaque' : ''}><span>Esperando liberação</span><strong>{pendentes.length}</strong></div>
+        {resumo && <div><span>Novos (7 dias)</span><strong>{resumo.novos_7d}</strong></div>}
+        {resumo && <div><span>Recebido no mês</span><strong>{dinheiro(resumo.receita_mes)}</strong></div>}
+        {resumo && <div><span>Recebido no total</span><strong>{dinheiro(resumo.receita_total)}</strong></div>}
       </div>
+      {!resumo && !carregando && <p className="dica">Para ver faturamento, telefone e último acesso de cada pessoa, rode o arquivo painel-v2.sql no Supabase.</p>}
 
-      <h2>Pedidos para conferir ({pendentes.length})</h2>
+      {liberado && (
+        <div className="aviso liberado">
+          <p>✓ Pro liberado para <strong>{liberado.nome || liberado.email}</strong>{liberado.ate && <> até {dataBR(liberado.ate)}</>}. Quando a pessoa abrir o app, aparece a comemoração.</p>
+          {liberado.telefone && soZap(liberado.telefone) && (
+            <a className="botao whatsapp" target="_blank" rel="noreferrer"
+              href={linkWhatsApp(liberado.telefone, `Oi${liberado.nome ? ' ' + primeiroNome(liberado.nome) : ''}! Seu OrçaFechou Pro foi liberado${liberado.ate ? ` até ${dataBR(liberado.ate)}` : ''}. É só abrir o app. Obrigado!`)}>
+              Avisar no WhatsApp
+            </a>
+          )}
+          <button className="botao-link-simples" onClick={() => setLiberado(null)}>Ok</button>
+        </div>
+      )}
+
+      <h2>{pendentes.length > 0 && <span className="ponto-notif inline" aria-hidden="true" />}Pedidos para conferir ({pendentes.length})</h2>
       {pendentes.length === 0 ? <p className="dica">Nenhum pedido esperando. Quando alguém tocar em “Já paguei”, aparece aqui.</p> : (
         <>
-          <p className="dica">Confira no app do banco se o Pix caiu (valor e horário) e no WhatsApp se chegou o comprovante. Depois toque em +30 dias (mensal) ou +1 ano (anual).</p>
+          <p className="dica">Confira no app do banco se o Pix caiu (valor e horário) e no WhatsApp se chegou o comprovante. Depois toque no botão verde (+30 dias se for mensal, +1 ano se for anual).</p>
           <ul className="lista">{pendentes.map(linha)}</ul>
         </>
       )}
