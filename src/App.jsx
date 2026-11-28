@@ -10,8 +10,16 @@ import Plano from './pages/Plano.jsx'
 import BoasVindas from './pages/BoasVindas.jsx'
 import Admin from './pages/Admin.jsx'
 import ProAtivado from './components/ProAtivado.jsx'
+import Catalogo from './pages/Catalogo.jsx'
+import Resumo from './pages/Resumo.jsx'
+import Cobrar from './pages/Cobrar.jsx'
+import NavBaixo from './components/NavBaixo.jsx'
+import Avisos from './components/Avisos.jsx'
+import Confete from './components/Confete.jsx'
+import Icone from './components/Icone.jsx'
 import { nuvemAtiva } from './lib/supabase.js'
 import { useConta } from './lib/conta.js'
+import { lerPerfil } from './lib/dados.js'
 
 // Navegação simples pelo "#" do endereço (ex.: site.com/#/novo).
 function useRota() {
@@ -52,10 +60,17 @@ export default function App() {
   else if (pagina === 'perfil') conteudo = <Perfil voltar={b} />
   else if (pagina === 'plano' && nuvemAtiva) conteudo = <Plano />
   else if (pagina === 'admin' && nuvemAtiva) conteudo = <Admin />
+  else if (pagina === 'catalogo') conteudo = <Catalogo />
+  else if (pagina === 'resumo') conteudo = <Resumo />
+  else if (pagina === 'cobrar') conteudo = <Cobrar />
   else conteudo = <Inicio />
 
+  const logado = !nuvemAtiva || (user && !carregando)
+  // Nas telas de preencher (com botão Salvar embaixo) o menu de baixo some.
+  const comMenu = logado && !!lerPerfil().nome && !['novo', 'editar', 'copiar', 'recibo-de', 'perfil', 'nova-senha', 'entrar'].includes(pagina)
+
   return (
-    <div className="app">
+    <div className={`app ${comMenu ? 'com-menu' : ''}`}>
       <header className="topo nao-imprimir">
         <a href="#/" className="marca">
           <img src="/icon.svg" alt="" width="28" height="28" /> OrçaFechou
@@ -68,13 +83,16 @@ export default function App() {
               </a>
             )}
             {nuvemAtiva && !admin && <a href="#/plano" className={conta?.pro ? 'selo-pro' : 'botao-link'}>{conta?.pro ? 'PRO' : 'Seja Pro'}</a>}
-            <a href="#/perfil" className="botao-link">Meus dados</a>
+            {pagina && pagina !== 'inicio' && <a href="#/perfil" className="botao-redondo" aria-label="Meus dados"><Icone nome="pessoa" /></a>}
           </nav>
         )}
         {nuvemAtiva && !user && !carregando && pagina !== 'entrar' && <a href="#/entrar" className="botao-link">Entrar</a>}
       </header>
       {erro && <p className="erro">{erro}</p>}
       <main key={[pagina, a, b].join('/')}>{conteudo}</main>
+      {comMenu && <NavBaixo pagina={pagina} />}
+      <Avisos />
+      <Confete />
       {nuvemAtiva && user && <ProAtivado />}
     </div>
   )

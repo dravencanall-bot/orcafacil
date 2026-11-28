@@ -103,6 +103,8 @@ export async function sincronizar(user) {
     // Outra pessoa usou este aparelho antes: não mistura os dados.
     localStorage.removeItem(CHAVE_DOCS)
     localStorage.removeItem(CHAVE_PERFIL)
+    localStorage.removeItem('of_catalogo')
+    localStorage.removeItem('of_aberturas_vistas')
   } else if (!dono) {
     // Dados do "modo local" (antes de existir login): sobe para a conta.
     const locais = ler(CHAVE_DOCS, [])
@@ -131,7 +133,17 @@ export async function sincronizar(user) {
 }
 
 export function limparAparelho() {
-  ;[CHAVE_DOCS, CHAVE_PERFIL, CHAVE_DONO].forEach((k) => localStorage.removeItem(k))
+  ;[CHAVE_DOCS, CHAVE_PERFIL, CHAVE_DONO, 'of_catalogo', 'of_aberturas_vistas'].forEach((k) => localStorage.removeItem(k))
+}
+
+// Muda a situação e guarda quando isso aconteceu (usado no resumo do mês e na cobrança).
+export function comStatus(doc, status) {
+  const agora = new Date().toISOString()
+  const novo = { ...doc, status }
+  if (status === 'enviado' && !doc.enviadoEm) novo.enviadoEm = agora
+  if (status === 'aprovado' && !doc.aprovadoEm) novo.aprovadoEm = agora
+  if (status === 'pago') { if (!doc.pagoEm) novo.pagoEm = agora; if (!doc.aprovadoEm) novo.aprovadoEm = agora }
+  return novo
 }
 
 export async function minhaConta() {

@@ -4,6 +4,9 @@ import { dinheiro, hojeISO, totais, lerNumero } from '../lib/formato.js'
 import { ir } from '../lib/navegar.js'
 import { atualizarConta } from '../lib/conta.js'
 import { MODELOS } from '../lib/modelos.js'
+import { lerCatalogo } from '../lib/catalogo.js'
+import FolhaCatalogo from '../components/FolhaCatalogo.jsx'
+import Icone from '../components/Icone.jsx'
 
 const itemVazio = (tipo = 'servico') => ({ desc: '', qtd: '1', valor: '', tipo })
 const ehMaterial = (i) => i.tipo === 'material'
@@ -55,6 +58,16 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
       return novo
     }),
   }))
+  const [folha, setFolha] = useState(false)
+  const temCatalogo = lerCatalogo().length > 0
+  // Do catálogo: se o item já está no orçamento, soma 1 na quantidade; se não, entra no lugar de uma linha vazia ou no fim.
+  const doCatalogo = (c) => setDoc((d) => {
+    const k = d.itens.findIndex((i) => i.desc === c.desc)
+    if (k >= 0) return { ...d, itens: d.itens.map((i, j) => (j === k ? { ...i, qtd: String((lerNumero(i.qtd) || 0) + 1) } : i)) }
+    const novo = { desc: c.desc, qtd: '1', valor: c.valor || '', tipo: c.tipo || 'servico' }
+    const v = d.itens.findIndex((i) => !i.desc.trim() && !String(i.valor).trim())
+    return { ...d, itens: v >= 0 ? d.itens.map((i, j) => (j === v ? novo : i)) : [...d.itens, novo] }
+  })
   const addItem = (tipo) => setDoc((d) => ({ ...d, itens: [...d.itens, itemVazio(tipo)] }))
   const tirarItem = (k) => setDoc((d) => ({ ...d, itens: d.itens.length > 1 ? d.itens.filter((_, j) => j !== k) : [itemVazio()] }))
   const vazio = doc.itens.every((i) => !i.desc.trim() && !String(i.valor).trim())
@@ -114,6 +127,12 @@ export default function Editor({ id, tipo = 'orcamento', deOrcamento, copiaDe })
         <label>WhatsApp do cliente<input value={doc.cliente.telefone} onChange={(e) => setCliente('telefone', e.target.value)} placeholder="(11) 98888-7777" inputMode="tel" /></label>
         <label>Endereço do serviço<input value={doc.cliente.endereco} onChange={(e) => setCliente('endereco', e.target.value)} placeholder="Rua, número, bairro" /></label>
       </fieldset>
+
+      <button type="button" className={`botao-catalogo ${temCatalogo ? '' : 'vazio'}`} onClick={() => setFolha(true)}>
+        <span className="botao-catalogo-icone"><Icone nome="catalogo" /></span>
+        <span><strong>Puxar do meu catálogo</strong><small>{temCatalogo ? 'Toque nos serviços salvos e pronto' : 'Salve seus serviços e preços para não digitar de novo'}</small></span>
+      </button>
+      {folha && <FolhaCatalogo itensDoc={doc.itens} aoAdicionar={doCatalogo} fechar={() => setFolha(false)} />}
 
       <fieldset>
         <legend>Serviços (mão de obra)</legend>

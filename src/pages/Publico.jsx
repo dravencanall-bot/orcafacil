@@ -5,6 +5,7 @@ import { decodificar, buscarPublico } from '../lib/dados.js'
 import { dinheiro, totais, linkWhatsApp, hojeISO, somarDias, dataBR } from '../lib/formato.js'
 import { EXEMPLO } from '../lib/modelos.js'
 import { perfilVazio } from '../lib/dados.js'
+import { registrarAbertura } from '../lib/aberturas.js'
 
 const dadosExemplo = () => ({ doc: { ...EXEMPLO.doc, data: hojeISO() }, perfil: { ...perfilVazio, ...EXEMPLO.perfil }, pro: true })
 
@@ -12,7 +13,7 @@ const dadosExemplo = () => ({ doc: { ...EXEMPLO.doc, data: hojeISO() }, perfil: 
 // Com "exemplo", mostra um orçamento de demonstração (para quem ainda não usa o app).
 export default function Publico({ codigo, id, exemplo }) {
   const [dados, setDados] = useState(() => (exemplo ? dadosExemplo() : id ? undefined : decodificar(codigo || '')))
-  useEffect(() => { if (id) buscarPublico(id).then(setDados) }, [id])
+  useEffect(() => { if (id) buscarPublico(id).then((d) => { setDados(d); if (d) registrarAbertura(id) }) }, [id])
   useEffect(() => {
     if (!dados?.doc) return
     const tipo = dados.doc.tipo === 'recibo' ? 'Recibo' : 'Orçamento'
@@ -41,7 +42,7 @@ export default function Publico({ codigo, id, exemplo }) {
       <div className="app publico">
         <main>
           <div className="faixa-exemplo nao-imprimir"><strong>Exemplo.</strong> É assim que o seu cliente recebe o orçamento no WhatsApp: com sua logo, sua cor, botão de aprovar e Pix.</div>
-          <Documento doc={doc} perfil={perfil} marca={false} />
+          <Documento doc={doc} perfil={perfil} marca={false} pro />
           <div className="acoes nao-imprimir">
             <button className="botao whatsapp grande" onClick={() => alert('No orçamento de verdade, este botão abre o WhatsApp do profissional com a mensagem de aprovação pronta.')}>Aprovar orçamento</button>
           </div>
@@ -59,7 +60,7 @@ export default function Publico({ codigo, id, exemplo }) {
     <div className="app publico">
       <main>
         {vencido && <p className="validade-vencida nao-imprimir">Este orçamento venceu em {dataBR(vence)}. Os valores podem ter mudado: confirme com {perfil.nome || 'o profissional'} antes de pagar.</p>}
-        <Documento doc={doc} perfil={perfil} marca={!pro} />
+        <Documento doc={doc} perfil={perfil} marca={!pro} pro={pro} />
         {!recibo && perfil.telefone && (
           <div className="acoes nao-imprimir">
             <a className="botao whatsapp grande" href={aprovar} target="_blank" rel="noreferrer">Aprovar orçamento</a>

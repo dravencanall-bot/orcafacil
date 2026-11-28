@@ -3,6 +3,7 @@ import { supabase, PLANOS } from '../lib/supabase.js'
 import { useConta, atualizarConta, diasRestantes } from '../lib/conta.js'
 import { dataBR } from '../lib/formato.js'
 import PagamentoManual from '../components/PagamentoManual.jsx'
+import { RECURSOS_PRO } from '../lib/pro.js'
 
 // '1' = cobrança automática pelo Mercado Pago (precisa do MP_ACCESS_TOKEN no servidor).
 // Qualquer outro valor = pagamento manual no Pix do dono do app, liberado no painel.
@@ -95,36 +96,61 @@ export default function Plano() {
 
   const dias = diasRestantes(conta)
   return (
-    <section>
-      <h1>Seu plano</h1>
+    <section className="pagina plano-pagina">
       {conta?.pro ? (
-        <div className={`cartao status-plano ${dias <= 5 ? 'vencendo' : ''}`}>
-          <strong>Pro ativo</strong>
+        <div className={`cartao status-plano pro ${dias <= 5 ? 'vencendo' : ''}`}>
+          <span className="selo-pro">PRO</span>
+          <strong>Seu Pro está ativo 👑</strong>
           <span>Válido até {dataBR(conta.pro_ate)} ({dias} {dias === 1 ? 'dia' : 'dias'})</span>
-          {dias <= 5 && <span>Renove para não voltar ao limite grátis. Os dias que faltam são somados.</span>}
+          {dias <= 5 && <span>Renove para não perder os recursos. Os dias que faltam são somados.</span>}
         </div>
       ) : (
-        <div className="cartao status-plano">
-          <strong>Plano grátis</strong>
-          <span>{conta ? `${Math.min(conta.usados_mes, conta.limite)} de ${conta.limite} orçamentos usados este mês` : 'Carregando...'}</span>
-          <div className="barra-uso"><div style={{ width: `${conta ? Math.min(100, (conta.usados_mes / conta.limite) * 100) : 0}%` }} /></div>
+        <div className="plano-hero">
+          <span className="selo-pro">PRO</span>
+          <h1>Feche mais serviços e receba sem correr atrás</h1>
+          <p>Por menos de 50 centavos por dia. Um único serviço a mais no mês já paga o Pro.</p>
+          {conta && (
+            <div className="uso-gratis">
+              <span>Seu plano grátis: {Math.min(conta.usados_mes, conta.limite)} de {conta.limite} orçamentos usados este mês</span>
+              <div className="barra-uso"><div style={{ width: `${Math.min(100, (conta.usados_mes / conta.limite) * 100)}%` }} /></div>
+            </div>
+          )}
         </div>
       )}
+
+      <div className="recursos-pro">
+        <div className="recurso-pro surgir"><span className="recurso-icone">♾️</span><div><strong>Orçamentos ilimitados</strong><p>Sem o limite de {conta?.limite || 5} por mês.</p></div></div>
+        {RECURSOS_PRO.map((r, i) => (
+          <a key={r.id} href={`#/${{ cobrar: 'cobrar', visto: '', catalogo: 'catalogo', marca: 'perfil', resumo: 'resumo' }[r.id]}`} className="recurso-pro surgir" style={{ '--i': i + 1 }}>
+            <span className="recurso-icone">{r.icone}</span>
+            <div><strong>{r.titulo}</strong><p>{r.texto}</p></div>
+          </a>
+        ))}
+      </div>
+
+      <table className="comparar">
+        <thead><tr><th /><th>Grátis</th><th className="col-pro">Pro</th></tr></thead>
+        <tbody>
+          <tr><td>Orçamentos por mês</td><td>{conta?.limite || 5}</td><td className="col-pro">Ilimitados</td></tr>
+          <tr><td>Recibos e Pix no link</td><td>✓</td><td className="col-pro">✓</td></tr>
+          <tr><td>Cobrança pronta no WhatsApp</td><td>—</td><td className="col-pro">✓</td></tr>
+          <tr><td>Aviso “cliente abriu”</td><td>—</td><td className="col-pro">✓</td></tr>
+          <tr><td>Catálogo de serviços</td><td>3 itens</td><td className="col-pro">Ilimitado</td></tr>
+          <tr><td>Logo, cor livre e estilos</td><td>—</td><td className="col-pro">✓</td></tr>
+          <tr><td>Resumo do mês</td><td>—</td><td className="col-pro">✓</td></tr>
+          <tr><td>Marca “Feito com OrçaFechou”</td><td>Aparece</td><td className="col-pro">Sem marca</td></tr>
+        </tbody>
+      </table>
 
       {pedidoPendente && !conta?.pro && <p className="aviso-plano">Recebemos seu aviso de pagamento. Seu Pro será liberado assim que for conferido.</p>}
       <div className="planos">
         {Object.entries(PLANOS).map(([id, p]) => (
           <div key={id} className={`cartao plano ${id === 'anual' ? 'destaque' : ''}`}>
-            {id === 'anual' && <span className="selo">Economize 33%</span>}
+            {id === 'anual' && <span className="selo">Mais escolhido · economize 33%</span>}
             <h2>Pro {p.nome}</h2>
             <p className="preco">{p.rotulo}</p>
-            <ul>
-              <li>✓ Orçamentos ilimitados</li>
-              <li>✓ Sem a marca “Feito com OrçaFechou”</li>
-              <li>✓ Sem anúncios, sempre</li>
-            </ul>
-            <button className={id === 'anual' ? 'botao principal grande' : 'botao grande'} onClick={() => assinar(id)} disabled={!!gerando}>
-              {gerando === id ? 'Gerando Pix...' : conta?.pro ? 'Renovar com Pix' : 'Assinar com Pix'}
+            <button className={id === 'anual' ? 'botao dourado grande' : 'botao principal grande'} onClick={() => assinar(id)} disabled={!!gerando}>
+              {gerando === id ? 'Gerando Pix...' : conta?.pro ? 'Renovar com Pix' : 'Quero o Pro ' + p.nome.toLowerCase()}
             </button>
           </div>
         ))}

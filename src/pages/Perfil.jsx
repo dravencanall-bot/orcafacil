@@ -4,6 +4,13 @@ import { ir } from '../lib/navegar.js'
 import { nuvemAtiva } from '../lib/supabase.js'
 import { useConta, sair } from '../lib/conta.js'
 import { detectarTipo } from '../lib/pix.js'
+import { usePro } from '../lib/pro.js'
+import { hojeISO } from '../lib/formato.js'
+import { EXEMPLO } from '../lib/modelos.js'
+import Documento, { ESTILOS } from '../components/Documento.jsx'
+import Cadeado from '../components/Cadeado.jsx'
+
+const EXEMPLO_DOC = { ...EXEMPLO.doc, data: hojeISO(), itens: EXEMPLO.doc.itens.slice(0, 2), obs: '', garantia: '', prazo: '', pagamento: '' }
 
 const NOMES_TIPO = { cpf: 'CPF/CNPJ', celular: 'Celular', email: 'E-mail', aleatoria: 'Chave aleatória' }
 
@@ -37,6 +44,7 @@ export default function Perfil({ voltar }) {
   const tipoChave = detectarTipo(p.pixChave)
 
   const { user, admin } = useConta()
+  const pro = usePro()
   const [salvando, setSalvando] = useState(false)
   const salvar = async (e) => {
     e.preventDefault()
@@ -66,16 +74,41 @@ export default function Perfil({ voltar }) {
         <label>Seu WhatsApp*<input value={p.telefone} onChange={(e) => set('telefone', e.target.value)} placeholder="(11) 98888-7777" inputMode="tel" /></label>
         <label>Cidade<input value={p.cidade} onChange={(e) => set('cidade', e.target.value)} placeholder="Ex.: Campinas - SP" /></label>
         <label>CPF ou CNPJ (opcional)<input value={p.documento} onChange={(e) => set('documento', e.target.value)} inputMode="numeric" /></label>
-        <label>Logo (opcional)
-          <input type="file" accept="image/*" onChange={async (e) => e.target.files[0] && set('logo', await reduzirImagem(e.target.files[0]))} />
-        </label>
-        {p.logo && <div className="logo-previa"><img src={p.logo} alt="Sua logo" /><button type="button" className="botao" onClick={() => set('logo', '')}>Tirar logo</button></div>}
+      </fieldset>
+
+      <fieldset className={pro ? '' : 'fieldset-pro'}>
+        <legend>🎨 Sua marca no orçamento {!pro && <span className="selo-pro pequeno">PRO</span>}</legend>
         <div className="cores">
-          <span>Cor dos orçamentos</span>
+          <span>Cor</span>
           {CORES.map((c) => (
             <button type="button" key={c} className={p.cor === c ? 'cor ativa' : 'cor'} style={{ background: c }} onClick={() => set('cor', c)} aria-label={`Cor ${c}`} />
           ))}
+          <label className={`cor cor-livre ${pro ? '' : 'travada'}`} title="Qualquer cor" style={!CORES.includes(p.cor) ? { background: p.cor, boxShadow: '0 0 0 2px var(--texto)' } : undefined}>
+            {pro ? <input type="color" value={p.cor || '#0f766e'} onChange={(e) => set('cor', e.target.value)} aria-label="Escolher qualquer cor" /> : <a href="#/plano" aria-label="Qualquer cor (Pro)">🔒</a>}
+          </label>
         </div>
+        {pro ? (
+          <>
+            <label>Logo
+              <input type="file" accept="image/*" onChange={async (e) => e.target.files[0] && set('logo', await reduzirImagem(e.target.files[0]))} />
+            </label>
+            {p.logo && <div className="logo-previa"><img src={p.logo} alt="Sua logo" /><button type="button" className="botao" onClick={() => set('logo', '')}>Tirar logo</button></div>}
+            <span className="rotulo-campo">Estilo da folha</span>
+            <div className="estilos">
+              {Object.entries(ESTILOS).map(([k, v]) => (
+                <button type="button" key={k} className={`estilo-opcao mini-${k} ${(p.estilo || 'classico') === k ? 'ativo' : ''}`} style={{ '--cor': p.cor }} onClick={() => set('estilo', k)}>
+                  <span className="mini-folha"><i /><i /><i /></span>{v}
+                </button>
+              ))}
+            </div>
+            <label>Frase no fim do orçamento<input value={p.rodape || ''} onChange={(e) => set('rodape', e.target.value)} placeholder="Ex.: Obrigado pela preferência! Siga @joaoeletrica" maxLength={140} /></label>
+            <p className="dica">✓ Sem a marca “Feito com OrçaFechou”.</p>
+          </>
+        ) : (
+          <Cadeado recurso="marca" texto="Coloque sua logo, qualquer cor, escolha entre 3 estilos de folha, uma frase sua no fim e tire a marca OrçaFechou." />
+        )}
+        <span className="rotulo-campo">Como fica</span>
+        <div className="previa-documento"><Documento doc={EXEMPLO_DOC} perfil={p} pro={pro} marca={!pro} /></div>
       </fieldset>
 
       <fieldset>

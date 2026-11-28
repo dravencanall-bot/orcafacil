@@ -1,10 +1,18 @@
 import { dinheiro, dataBR, somarDias, totais, lerNumero, porExtenso, formatarTelefone } from '../lib/formato.js'
 
+export const ESTILOS = {
+  classico: 'Clássico',
+  moderno: 'Moderno',
+  elegante: 'Elegante',
+}
+
 // O "papel" do orçamento/recibo: é o que o cliente vê e o que vira PDF.
-export default function Documento({ doc, perfil, marca = true }) {
+// pro: mostra logo, estilo e rodapé personalizados. marca: "Feito com OrçaFechou" no fim.
+export default function Documento({ doc, perfil, marca = true, pro = false }) {
   const { subtotal, desconto, total } = totais(doc)
   const recibo = doc.tipo === 'recibo'
   const cor = perfil.cor || '#0f766e'
+  const estilo = pro && ESTILOS[perfil.estilo] ? perfil.estilo : 'classico'
   const validade = doc.validadeDias ? somarDias(doc.data, doc.validadeDias) : null
   const preenchidos = (doc.itens || []).filter((i) => i.desc || lerNumero(i.valor))
   const grupos = [
@@ -19,10 +27,10 @@ export default function Documento({ doc, perfil, marca = true }) {
   ].filter((c) => c && c[1])
 
   return (
-    <article className="papel" style={{ '--cor': cor }}>
+    <article className={`papel estilo-${estilo}`} style={{ '--cor': cor }}>
       <div className="papel-topo">
         <div className="papel-emissor">
-          {perfil.logo && <img src={perfil.logo} alt="" className="papel-logo" />}
+          {pro && perfil.logo && <img src={perfil.logo} alt="" className="papel-logo" />}
           <div>
             <strong className="papel-nome">{perfil.nome || 'Seu nome'}</strong>
             {perfil.profissao && <div>{perfil.profissao}</div>}
@@ -98,6 +106,7 @@ export default function Documento({ doc, perfil, marca = true }) {
         </div>
       )}
 
+      {pro && perfil.rodape && <p className="papel-rodape-proprio">{perfil.rodape}</p>}
       {marca && <footer className="papel-rodape">Feito com OrçaFechou</footer>}
     </article>
   )
