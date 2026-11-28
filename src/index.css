@@ -246,3 +246,51 @@ h1 { font-size: 1.4rem; margin: 8px 0 16px; }
 .icone-compartilhar { vertical-align: -3px; color: #2563eb; }
 @keyframes aparecer { from { opacity: 0; } }
 @keyframes subir { from { transform: translateY(40px); opacity: 0; } }
+/* Pontinho laranja de notificação (Painel do dono) */
+.com-ponto { position: relative; }
+.com-ponto:has(.ponto-notif) { margin-right: 12px; }
+.ponto-notif { position: absolute; top: -14px; right: -16px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px;
+  background: #f97316; color: #fff; font-size: .7rem; font-weight: 800; line-height: 18px; text-align: center;
+  box-shadow: 0 0 0 2px var(--fundo); animation: ponto-pulso 1.8s ease-out infinite; }
+.ponto-notif.inline { position: static; display: inline-block; width: 10px; min-width: 10px; height: 10px; padding: 0; margin-right: 8px; vertical-align: middle; box-shadow: none; }
+@keyframes ponto-pulso { 0% { box-shadow: 0 0 0 2px var(--fundo), 0 0 0 2px rgba(249, 115, 22, .6); } 70% { box-shadow: 0 0 0 2px var(--fundo), 0 0 0 9px rgba(249, 115, 22, 0); } 100% { box-shadow: 0 0 0 2px var(--fundo), 0 0 0 2px rgba(249, 115, 22, 0); } }
+
+/* Painel do dono: mais detalhes */
+.resumo { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.resumo div.destaque { border-color: #fdba74; background: #fff7ed; }
+.resumo div.destaque strong { color: #c2410c; }
+.usuario.esperando { border: 2px solid #fdba74; background: #fffbf5; }
+.usuario .sub { color: var(--suave); font-size: .9rem; }
+.usuario .datas { font-size: .8rem; margin-top: 4px; }
+.pedido-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; margin: 10px 0 4px; }
+.pedido-info div { background: #fff; border: 1px solid #fed7aa; border-radius: 10px; padding: 8px 10px; }
+.pedido-info span { display: block; font-size: .75rem; color: var(--suave); }
+.pedido-info strong { font-size: .95rem; }
+.pedido-info em { display: block; font-style: normal; font-size: .75rem; color: #c2410c; font-weight: 700; }
+.tag.pago { background: #dbeafe; color: #1e3a8a; }
+.tag.recusado { background: #fee2e2; color: #7f1d1d; }
+.aviso.liberado { word-break: normal; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.aviso.liberado p { margin: 0; flex: 1 1 220px; }
+
+/* Comemoração: Pro ativado */
+.festa-fundo { position: fixed; inset: 0; z-index: 50; background: rgba(15, 23, 42, .55); display: grid; place-items: center; padding: 16px; overflow: hidden; animation: festa-entra .25s ease-out; }
+.festa-cartao { position: relative; width: 100%; max-width: 380px; background: #fff; border-radius: 22px; padding: 28px 22px 16px; text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .3); display: grid; gap: 10px; justify-items: center; animation: festa-pula .5s cubic-bezier(.2, 1.4, .4, 1); }
+.festa-cartao h1 { margin: 0; font-size: 1.6rem; }
+.festa-coroa { font-size: 3.6rem; line-height: 1; margin-top: -4px; animation: festa-balanca 1.6s ease-in-out infinite; }
+.festa-sub { margin: 0; color: var(--suave); }
+.festa-plano { width: 100%; background: linear-gradient(135deg, #fef3c7, #ffedd5); border-radius: 14px; padding: 12px; display: grid; gap: 2px; }
+.festa-plano span { font-weight: 700; color: #78350f; }
+.festa-plano strong { color: #9a3412; font-size: 1.1rem; }
+.festa-lista { list-style: none; padding: 0; margin: 4px 0; text-align: left; line-height: 1.9; }
+.festa-cartao .botao.grande { margin-top: 4px; }
+.festa-confete { position: absolute; inset: 0; pointer-events: none; }
+.festa-confete i { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; opacity: .95; animation: festa-cai linear infinite; }
+@keyframes festa-cai { to { transform: translateY(110vh) rotate(calc(var(--giro) * 720deg)); } }
+@keyframes festa-entra { from { opacity: 0; } }
+@keyframes festa-pula { from { transform: scale(.7); opacity: 0; } }
+@keyframes festa-balanca { 50% { transform: rotate(-8deg) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .festa-confete { display: none; }
+  .festa-cartao, .festa-coroa, .ponto-notif, .festa-fundo { animation: none; }
+}
